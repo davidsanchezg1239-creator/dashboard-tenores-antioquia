@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Tenores de Obra Civil | Gobernación de Antioquia</title>
+  
+  <!-- Estilos del Dashboard -->
+  <link rel="stylesheet" href="css/style.css?v=3">
+
+  <!-- Leaflet.js CSS para Cartografía Real GIS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- SheetJS para lectura y exportación de archivos Excel en cliente sin backend -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- Encabezado Institucional -->
+  <header class="site-header">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <div class="brand-emblem">🏛️</div>
+        <div>
+          <h1 class="brand-title">GOBERNACIÓN DE ANTIOQUIA</h1>
+          <p class="brand-subtitle">Secretaría de Infraestructura Física · Dashboard de Consulta y Análisis de Tenores Viales</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-header" id="btnAdminLogin">
+          <span>🔐</span> Modo Administrador (Actualizar Datos)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="main-layout">
+
+    <!-- Sección de Filtros (Fiel al Boceto a Mano) -->
+    <section class="filter-section">
+      <div class="filter-header-row">
+        <span class="filter-heading">Filtros de Búsqueda y Consulta</span>
+        <button class="btn-reset" id="btnResetFilters" title="Restablecer todos los filtros">
+          🔄 Limpiar Filtros
+        </button>
+      </div>
+
+      <div class="filter-grid">
+        <!-- 1. Buscar Proyecto -->
+        <div class="filter-box">
+          <label for="filterSearch">Proyecto</label>
+          <input type="text" id="filterSearch" placeholder="🔍 Buscar por nombre o palabra clave...">
+        </div>
+
+        <!-- 2. Fecha (Año) -->
+        <div class="filter-box">
+          <label for="filterYear">Fecha (Año)</label>
+          <select id="filterYear">
+            <option value="ALL">Todos los años</option>
+          </select>
+        </div>
+
+        <!-- 3. Tipología -->
+        <div class="filter-box">
+          <label for="filterTipologia">Tipología de Obra</label>
+          <select id="filterTipologia">
+            <option value="ALL">Todas las tipologías</option>
+          </select>
+        </div>
+
+        <!-- 4. Subregión -->
+        <div class="filter-box">
+          <label for="filterSubregion">Subregión</label>
+          <select id="filterSubregion">
+            <option value="ALL">Todas las subregiones</option>
+          </select>
+        </div>
+
+        <!-- 5. Municipio -->
+        <div class="filter-box">
+          <label for="filterMunicipio">Municipio</label>
+          <select id="filterMunicipio">
+            <option value="ALL">Todos los municipios</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grid Central: Información General + Mapa Interactivo -->
+    <section class="dashboard-grid">
+
+      <!-- Panel 1: Información General del Proyecto Seleccionado -->
+      <article class="panel-card info-panel-card">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <span>📋</span> Información General del Proyecto
+          </h2>
+          <span class="badge-count" id="filteredCountBadge">0 proyectos</span>
+        </div>
+
+        <!-- Contenido Dinámico (Consolidado o Ficha de Proyecto) -->
+        <div class="general-info-content" id="generalInfoContent">
+          <!-- Se inyecta dinámicamente vía JavaScript -->
+        </div>
+
+        <!-- Botón del Boceto: Ir a ver informe completo -->
+        <button class="btn-view-report" id="btnViewFullReport">
+          <span>📄</span> Ir a ver informe completo de proyectos
+        </button>
+
+        <!-- Lista previa para selección rápida -->
+        <div class="preview-list-header">Listado Rápido de Proyectos Filtrados</div>
+        <div class="projects-list-preview" id="projectsListPreview">
+          <!-- Items generados dinámicamente -->
+        </div>
+      </article>
+
+      <!-- Panel 2: Mapa Dinámico de Antioquia -->
+      <article class="panel-card map-container-box">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <span>🗺️</span> Mapa Antioquia con Subregiones
+          </h2>
+          <span class="badge-count">9 Subregiones</span>
+        </div>
+        <p class="map-instructions">Pasa el cursor sobre una subregión para ver su indicador de inversión y proyectos, o haz clic para filtrarla en todo el panel.</p>
+
+        <!-- Contenedor del Mapa Vectorial SVG -->
+        <div id="vectorMapContainer"></div>
+      </article>
+
+    </section>
+
+    <!-- Sección de Módulos Especializados de Tenores (Alcantarillas, Box Culvert, Muros) -->
+    <section class="specialized-tenores-section">
+      <div class="section-title-bar">
+        <h2 class="section-title">📐 Tenores Específicos de Obras de Arte y Drenaje Vial</h2>
+      </div>
+
+      <!-- Pestañas de Navegación -->
+      <div class="tenores-tabs">
+        <button class="tab-btn active" data-tab="tab-box-culvert">📦 Box Culvert (Cajones)</button>
+        <button class="tab-btn" data-tab="tab-alcantarillas">🕳️ Alcantarillas ($/mL)</button>
+        <button class="tab-btn" data-tab="tab-muros">🧱 Muros de Contención</button>
+      </div>
+
+      <!-- Tab 1: Box Culvert -->
+      <div class="tab-content active" id="tab-box-culvert">
+        <div class="table-responsive">
+          <table class="engineering-table">
+            <thead>
+              <tr>
+                <th>Proyecto / Contrato</th>
+                <th class="text-center">Sección Transversal</th>
+                <th class="text-center">Año</th>
+                <th class="text-right">Tenor ($/m³)</th>
+                <th class="text-right">Tenor ($/Unidad)</th>
+                <th class="text-right">Tenor ($/mL)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBoxCulvertBody">
+              <!-- Se inyecta dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Alcantarillas -->
+      <div class="tab-content" id="tab-alcantarillas">
+        <div class="table-responsive">
+          <table class="engineering-table">
+            <thead>
+              <tr>
+                <th>Proyecto / Presupuesto</th>
+                <th class="text-center">Año</th>
+                <th class="text-right">Tenor Alcantarilla ($/mL) [Sin Transporte]</th>
+              </tr>
+            </thead>
+            <tbody id="tableAlcantarillasBody">
+              <!-- Se inyecta dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Muros de Contención -->
+      <div class="tab-content" id="tab-muros">
+        <div class="table-responsive">
+          <table class="engineering-table">
+            <thead>
+              <tr>
+                <th>Proyecto / Presupuesto</th>
+                <th class="text-center">Año</th>
+                <th class="text-right">Tenor Muro ($/Unidad)</th>
+                <th class="text-right">Tenor Muro ($/m³) [Sin Transporte]</th>
+              </tr>
+            </thead>
+            <tbody id="tableMurosBody">
+              <!-- Se inyecta dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal: Informe Completo de Proyectos -->
+  <div class="modal-overlay" id="fullReportModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Informe Completo y Consolidado de Proyectos Viales <span id="reportModalCount"></span></h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="engineering-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Proyecto</th>
+                <th>Subregión</th>
+                <th>Municipio</th>
+                <th>Tipología</th>
+                <th class="text-center">Año</th>
+                <th class="text-right">Valor Invertido</th>
+                <th class="text-center">Longitud</th>
+                <th class="text-right">Placa Huella ($/km)</th>
+                <th class="text-right">Pav. Flexible ($/km)</th>
+                <th class="text-right">Puente ($/mL)</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody">
+              <!-- Registros -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-close-btn">Cerrar</button>
+        <button class="btn-primary" id="btnExportReportCsv">📥 Exportar Reporte a CSV / Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Autenticación de Administrador -->
+  <div class="modal-overlay" id="adminAuthModal">
+    <div class="modal-container admin-auth-box">
+      <div class="modal-header">
+        <h3>Acceso al Panel de Administración</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Este modo está reservado para la persona encargada para actualizar o ingresar nuevos proyectos desde archivos de Excel.
+        </p>
+        <div class="filter-box">
+          <label for="adminPasswordInput">Contraseña de Administrador:</label>
+          <input type="password" id="adminPasswordInput" placeholder="Introduce la contraseña...">
+          <div class="error-text" id="adminAuthError">Contraseña incorrecta. Inténtalo de nuevo.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-close-btn">Cancelar</button>
+        <button class="btn-primary" id="btnSubmitAdminAuth">Acceder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Panel de Control del Administrador -->
+  <div class="modal-overlay" id="adminControlPanelModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Panel de Administración - Carga y Gestión de Datos</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="admin-card">
+          <h4>📤 Cargar Nuevos Proyectos desde Excel (.xlsx o .csv)</h4>
+          <p>Selecciona un archivo Excel. El sistema leerá las filas y las anexará a la base de datos visual en tiempo real sin requerir servidor.</p>
+          <div class="file-upload-wrapper">
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv">
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h4>💾 Sincronización Definitiva con GitHub Pages</h4>
+          <p>Para que los datos actualizados se publiquen de forma permanente en GitHub para cualquier visitante del mundo, haz clic en el botón de abajo y reemplaza el archivo generado <code>data.js</code> en la carpeta <code>js/</code> de tu repositorio.</p>
+          <button class="btn-primary" id="btnExportDataJson">Descargar Base de Datos Actualizada (data.js)</button>
+        </div>
+
+        <div class="admin-card" style="border-color: #fecaca; background: #fef2f2;">
+          <h4 style="color: #991b1b;">⚠️ Restauración de Datos</h4>
+          <p>Restablece la base de datos a sus valores originales por defecto.</p>
+          <button class="btn-secondary" id="btnResetDbDefaults" style="color: #991b1b; border-color: #fca5a5;">Restaurar Datos Originales</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-close-btn">Cerrar Panel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pie de Página Institucional -->
+  <footer class="site-footer">
+    <p>© 2026 Secretaría de Infraestructura - Gobernación de Antioquia · Todos los derechos reservados.</p>
+    <div class="footer-academic-badge">
+      🎓 Proyecto de Grado - Ingeniería Civil · Aplicación Web de Consulta y Análisis de Tenores Viales
+    </div>
+  </footer>
+
+  <!-- Scripts de la Aplicación -->
+  <!-- Leaflet.js para Mapa Geográfico Real -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Capa GeoJSON Oficial DANE 125 Municipios y Subregiones -->
+  <script src="js/antioquia_geojson.js?v=3"></script>
+  <script src="js/data.js?v=3"></script>
+  <script src="js/map.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
+
+  <!-- Lógica de Pestañas de Tenores Especiales -->
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(btn.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
+

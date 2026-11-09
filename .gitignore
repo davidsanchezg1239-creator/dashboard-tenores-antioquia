@@ -1,0 +1,6 @@
+# Sistema y temporales
+.DS_Store
+Thumbs.db
+*.tmp
+__pycache__/
+*.pyc
