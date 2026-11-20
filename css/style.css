@@ -650,6 +650,43 @@ html, body {
   flex-wrap: wrap;
 }
 
+.map-layer-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.layer-switch-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--secondary);
+  text-transform: uppercase;
+}
+
+.layer-btn {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.layer-btn:hover {
+  background: #f1f5f9;
+}
+
+.layer-btn.active {
+  background: #005a2b;
+  color: #ffffff;
+  border-color: #005a2b;
+  box-shadow: 0 1px 3px rgba(0, 90, 43, 0.3);
+}
+
 .map-legend-pills {
   display: flex;
   flex-wrap: wrap;

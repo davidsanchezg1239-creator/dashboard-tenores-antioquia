@@ -1,5 +1,5 @@
-// Mapa Geográfico Oficial e Interactivo de Antioquia con Leaflet.js y DANE GeoJSON
-// 125 Municipios y 9 Subregiones
+// Mapa Geográfico Oficial e Interactivo de Antioquia con Leaflet.js
+// Soporta: Capa Municipal (125 municipios) y Capa Oficial Shapefile de Subregiones (Gobernación de Antioquia)
 
 const SUBREGION_COLORS = {
   "URABÁ": { fill: "#2e7d32", border: "#1b5e20" },
@@ -14,10 +14,12 @@ const SUBREGION_COLORS = {
 };
 
 let mapInstance = null;
-let geojsonLayer = null;
+let muniLayer = null;
+let subregOfficialLayer = null;
 let currentStats = {};
 let onSubregionSelectCallback = null;
 let activeSelectedSubregion = "ALL";
+let currentViewMode = "combined"; // 'combined' | 'subregiones' | 'municipios'
 
 function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
   onSubregionSelectCallback = onSelectSubregion;
@@ -25,14 +27,17 @@ function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  // Limpiar contenido previo y crear contenedor de mapa
   container.innerHTML = `
     <div class="map-controls-bar">
-      <div class="map-legend-pills" id="mapLegendPills">
-        <!-- Píldoras de subregiones -->
+      <div class="map-layer-switcher">
+        <span class="layer-switch-label">Capas SIG:</span>
+        <button class="layer-btn active" id="btnLayerCombined" title="Municipios con contorno de Subregión Shapefile">✨ Combinada</button>
+        <button class="layer-btn" id="btnLayerSubregiones" title="Shapefile Oficial de Subregiones">🗺️ Shapefile Subregiones</button>
+        <button class="layer-btn" id="btnLayerMunicipios" title="Detalle 125 Municipios">🏛️ Municipios</button>
       </div>
       <button class="btn-reset-map-view" id="btnResetMapView" title="Centrar mapa en Antioquia">🎯 Centrar</button>
     </div>
+    <div class="map-legend-pills" id="mapLegendPills"></div>
     <div id="antioquiaLeafletMap" class="leaflet-map-frame"></div>
   `;
 
@@ -49,7 +54,7 @@ function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
   }
   legendContainer.innerHTML = legendHtml;
 
-  // Eventos de las píldoras
+  // Eventos de píldoras
   legendContainer.querySelectorAll(".subreg-pill").forEach(pill => {
     pill.addEventListener("click", () => {
       const sub = pill.dataset.sub;
@@ -59,9 +64,19 @@ function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
     });
   });
 
+  // Switcher de Capas
+  const btnComb = document.getElementById("btnLayerCombined");
+  const btnSub = document.getElementById("btnLayerSubregiones");
+  const btnMun = document.getElementById("btnLayerMunicipios");
+
+  btnComb.addEventListener("click", () => setViewMode("combined"));
+  btnSub.addEventListener("click", () => setViewMode("subregiones"));
+  btnMun.addEventListener("click", () => setViewMode("municipios"));
+
   document.getElementById("btnResetMapView").addEventListener("click", () => {
-    if (mapInstance && geojsonLayer) {
-      mapInstance.fitBounds(geojsonLayer.getBounds(), { padding: [15, 15] });
+    if (mapInstance && (subregOfficialLayer || muniLayer)) {
+      const targetLayer = subregOfficialLayer || muniLayer;
+      mapInstance.fitBounds(targetLayer.getBounds(), { padding: [15, 15] });
     }
   });
 
@@ -73,95 +88,184 @@ function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
     scrollWheelZoom: true
   });
 
-  // Capa base limpia y elegante de OpenStreetMap / CartoDB Positron
+  // Capa base limpia y elegante de CARTO Voyager
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution: '&copy; CARTO &copy; OpenStreetMap',
     subdomains: 'abcd',
     maxZoom: 18,
     minZoom: 6
   }).addTo(mapInstance);
 
-  // Cargar capa GeoJSON de los 125 municipios
-  renderGeoJsonLayer();
+  // Renderizar capas GeoJSON
+  renderAllLayers();
 }
 
-function renderGeoJsonLayer() {
-  if (!mapInstance || typeof ANTIOQUIA_GEOJSON === "undefined") return;
+function setViewMode(mode) {
+  currentViewMode = mode;
+  document.querySelectorAll(".layer-btn").forEach(b => b.classList.remove("active"));
+  if (mode === "combined") document.getElementById("btnLayerCombined").classList.add("active");
+  if (mode === "subregiones") document.getElementById("btnLayerSubregiones").classList.add("active");
+  if (mode === "municipios") document.getElementById("btnLayerMunicipios").classList.add("active");
 
-  if (geojsonLayer) {
-    mapInstance.removeLayer(geojsonLayer);
+  renderAllLayers();
+}
+
+function renderAllLayers() {
+  if (!mapInstance) return;
+
+  // Remover capas previas
+  if (muniLayer) mapInstance.removeLayer(muniLayer);
+  if (subregOfficialLayer) mapInstance.removeLayer(subregOfficialLayer);
+
+  // 1. Modo Subregiones Oficiales (Shapefile puro)
+  if (currentViewMode === "subregiones") {
+    if (typeof SUBREGIONES_OFICIALES_GEOJSON !== "undefined") {
+      subregOfficialLayer = L.geoJSON(SUBREGIONES_OFICIALES_GEOJSON, {
+        style: styleOfficialSubregion,
+        onEachFeature: onEachOfficialSubregionHandler
+      }).addTo(mapInstance);
+      mapInstance.fitBounds(subregOfficialLayer.getBounds(), { padding: [10, 10] });
+    }
+    return;
   }
 
-  geojsonLayer = L.geoJSON(ANTIOQUIA_GEOJSON, {
-    style: styleFeature,
-    onEachFeature: onEachFeatureHandler
-  }).addTo(mapInstance);
+  // 2. Modo Municipios
+  if (currentViewMode === "municipios") {
+    if (typeof ANTIOQUIA_GEOJSON !== "undefined") {
+      muniLayer = L.geoJSON(ANTIOQUIA_GEOJSON, {
+        style: styleMuniFeature,
+        onEachFeature: onEachMuniFeatureHandler
+      }).addTo(mapInstance);
+      mapInstance.fitBounds(muniLayer.getBounds(), { padding: [10, 10] });
+    }
+    return;
+  }
 
-  // Ajustar la vista para encuadrar todo el departamento de Antioquia
-  mapInstance.fitBounds(geojsonLayer.getBounds(), { padding: [10, 10] });
+  // 3. Modo Combinado (Municipios detallados + Contorno grueso oficial de Subregiones)
+  if (currentViewMode === "combined") {
+    if (typeof ANTIOQUIA_GEOJSON !== "undefined") {
+      muniLayer = L.geoJSON(ANTIOQUIA_GEOJSON, {
+        style: styleMuniFeature,
+        onEachFeature: onEachMuniFeatureHandler
+      }).addTo(mapInstance);
+    }
+    if (typeof SUBREGIONES_OFICIALES_GEOJSON !== "undefined") {
+      subregOfficialLayer = L.geoJSON(SUBREGIONES_OFICIALES_GEOJSON, {
+        style: (f) => ({
+          fill: false,
+          color: '#0f172a',
+          weight: 2.8,
+          opacity: 0.85,
+          dashArray: '4, 2'
+        }),
+        interactive: false
+      }).addTo(mapInstance);
+    }
+    if (muniLayer) {
+      mapInstance.fitBounds(muniLayer.getBounds(), { padding: [10, 10] });
+    }
+  }
 }
 
-function styleFeature(feature) {
+// Estilos para Municipios
+function styleMuniFeature(feature) {
   const subreg = feature.properties.subregion;
   const colors = SUBREGION_COLORS[subreg] || { fill: "#64748b", border: "#334155" };
-  
   const isSelected = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === subreg);
 
   return {
     fillColor: colors.fill,
-    weight: isSelected ? 1.2 : 0.8,
+    weight: isSelected ? 1 : 0.6,
     opacity: 1,
     color: '#ffffff',
     fillOpacity: isSelected ? (activeSelectedSubregion === subreg ? 0.85 : 0.65) : 0.15
   };
 }
 
-function onEachFeatureHandler(feature, layer) {
+function onEachMuniFeatureHandler(feature, layer) {
   const muni = feature.properties.municipio;
   const subreg = feature.properties.subregion;
 
   layer.on({
     mouseover: (e) => {
       const l = e.target;
-      l.setStyle({
-        weight: 3,
-        color: '#f59e0b',
-        fillOpacity: 0.95
-      });
+      l.setStyle({ weight: 3, color: '#f59e0b', fillOpacity: 0.95 });
       l.bringToFront();
 
-      // Consultar estadísticas de la subregión y del municipio
       const sStats = currentStats[subreg] || { count: 0, total: 0, km: 0 };
       const mStats = currentStats.municipios ? (currentStats.municipios[muni] || { count: 0, total: 0 }) : { count: 0, total: 0 };
+      const formattedMuni = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(mStats.total);
+      const formattedSub = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(sStats.total);
 
-      const formattedTotalMuni = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(mStats.total);
-      const formattedTotalSub = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(sStats.total);
-
-      const tooltipContent = `
+      const html = `
         <div class="map-tt-container">
           <div class="map-tt-header">${muni}</div>
           <div class="map-tt-sub">Subregión: <strong>${subreg}</strong></div>
           <div class="map-tt-divider"></div>
           <div class="map-tt-line"><span>Proyectos en ${muni}:</span> <strong>${mStats.count}</strong></div>
-          <div class="map-tt-line"><span>Inversión en ${muni}:</span> <strong>${mStats.total > 0 ? formattedTotalMuni : '$ 0'}</strong></div>
+          <div class="map-tt-line"><span>Inversión en ${muni}:</span> <strong>${mStats.total > 0 ? formattedMuni : '$ 0'}</strong></div>
           <div class="map-tt-divider"></div>
-          <div class="map-tt-line"><span>Total Subregión:</span> <strong>${sStats.count} proy. (${formattedTotalSub})</strong></div>
+          <div class="map-tt-line"><span>Total Subregión:</span> <strong>${sStats.count} proy. (${formattedSub})</strong></div>
           <div class="map-tt-action">👆 Clic para filtrar ${subreg}</div>
         </div>
       `;
-
-      layer.bindTooltip(tooltipContent, {
-        sticky: true,
-        className: 'leaflet-custom-tooltip',
-        offset: [15, 0]
-      }).openTooltip();
+      layer.bindTooltip(html, { sticky: true, className: 'leaflet-custom-tooltip', offset: [15, 0] }).openTooltip();
     },
-
     mouseout: (e) => {
-      geojsonLayer.resetStyle(e.target);
+      if (muniLayer) muniLayer.resetStyle(e.target);
     },
+    click: () => {
+      if (typeof onSubregionSelectCallback === "function") {
+        onSubregionSelectCallback(subreg);
+      }
+    }
+  });
+}
 
-    click: (e) => {
+// Estilos para Subregiones Oficiales (Shapefile)
+function styleOfficialSubregion(feature) {
+  const subreg = feature.properties.subregion;
+  const colors = SUBREGION_COLORS[subreg] || { fill: "#64748b", border: "#334155" };
+  const isSelected = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === subreg);
+
+  return {
+    fillColor: colors.fill,
+    weight: isSelected ? 2.5 : 1.2,
+    opacity: 1,
+    color: isSelected ? (activeSelectedSubregion === subreg ? '#d97706' : '#ffffff') : '#cbd5e1',
+    fillOpacity: isSelected ? (activeSelectedSubregion === subreg ? 0.85 : 0.65) : 0.2
+  };
+}
+
+function onEachOfficialSubregionHandler(feature, layer) {
+  const subreg = feature.properties.subregion;
+
+  layer.on({
+    mouseover: (e) => {
+      const l = e.target;
+      l.setStyle({ weight: 4, color: '#f59e0b', fillOpacity: 0.95 });
+      l.bringToFront();
+
+      const sStats = currentStats[subreg] || { count: 0, total: 0, km: 0 };
+      const formattedSub = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(sStats.total);
+
+      const html = `
+        <div class="map-tt-container">
+          <div class="map-tt-header" style="font-size: 1rem;">SUBREGIÓN ${subreg}</div>
+          <div class="map-tt-sub">Shapefile Oficial Gobernación</div>
+          <div class="map-tt-divider"></div>
+          <div class="map-tt-line"><span>Contratos / Proyectos:</span> <strong>${sStats.count}</strong></div>
+          <div class="map-tt-line"><span>Inversión Total:</span> <strong>${formattedSub}</strong></div>
+          <div class="map-tt-line"><span>Longitud Vial:</span> <strong>${sStats.km.toFixed(2)} km</strong></div>
+          <div class="map-tt-action">👆 Clic para filtrar toda la subregión</div>
+        </div>
+      `;
+      layer.bindTooltip(html, { sticky: true, className: 'leaflet-custom-tooltip', offset: [15, 0] }).openTooltip();
+    },
+    mouseout: (e) => {
+      if (subregOfficialLayer) subregOfficialLayer.resetStyle(e.target);
+    },
+    click: () => {
       if (typeof onSubregionSelectCallback === "function") {
         onSubregionSelectCallback(subreg);
       }
@@ -175,16 +279,15 @@ function updateMapStats(subregionStats, muniStats) {
   if (muniStats) currentStats.municipios = muniStats;
 }
 
-// Resaltar subregión seleccionada en el mapa
+// Resaltar subregión seleccionada
 function highlightSubregionInMap(selectedSubregion) {
   activeSelectedSubregion = selectedSubregion || "ALL";
 
-  if (geojsonLayer) {
-    geojsonLayer.eachLayer(layer => {
+  if (muniLayer && currentViewMode !== "subregiones") {
+    muniLayer.eachLayer(layer => {
       const sub = layer.feature.properties.subregion;
       const isMatch = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === sub);
       const colors = SUBREGION_COLORS[sub] || { fill: "#64748b", border: "#334155" };
-
       layer.setStyle({
         fillColor: colors.fill,
         fillOpacity: isMatch ? (activeSelectedSubregion === sub ? 0.85 : 0.65) : 0.15,
@@ -194,7 +297,21 @@ function highlightSubregionInMap(selectedSubregion) {
     });
   }
 
-  // Actualizar píldoras activas
+  if (subregOfficialLayer && currentViewMode === "subregiones") {
+    subregOfficialLayer.eachLayer(layer => {
+      const sub = layer.feature.properties.subregion;
+      const isMatch = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === sub);
+      const colors = SUBREGION_COLORS[sub] || { fill: "#64748b", border: "#334155" };
+      layer.setStyle({
+        fillColor: colors.fill,
+        fillOpacity: isMatch ? (activeSelectedSubregion === sub ? 0.85 : 0.65) : 0.2,
+        weight: activeSelectedSubregion === sub ? 3.5 : 1.5,
+        color: activeSelectedSubregion === sub ? '#d97706' : '#ffffff'
+      });
+    });
+  }
+
+  // Actualizar píldoras
   document.querySelectorAll("#mapLegendPills .subreg-pill").forEach(p => {
     if (p.dataset.sub === activeSelectedSubregion) {
       p.classList.add("active");
