@@ -87,21 +87,17 @@ function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
     }
   });
 
-  // Inicializar Leaflet centrado en Antioquia
+  // Inicializar Leaflet centrado en Antioquia (100% Vectorial, Sin API keys ni marcas de agua)
   mapInstance = L.map('antioquiaLeafletMap', {
     center: [7.0, -75.5],
     zoom: 7,
     zoomControl: true,
-    scrollWheelZoom: true
+    scrollWheelZoom: true,
+    attributionControl: false // Elimina cualquier marca de agua o atribución
   });
 
-  // Capa base limpia CARTO Voyager
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CARTO &copy; OpenStreetMap',
-    subdomains: 'abcd',
-    maxZoom: 18,
-    minZoom: 6
-  }).addTo(mapInstance);
+  // NO se utilizan teselas externas (tiles) de terceros para evitar marcas de agua o claves API.
+  // El mapa se dibuja 100% a partir del Shapefile oficial y GeoJSON.
 
   labelMarkersGroup = L.layerGroup().addTo(mapInstance);
 

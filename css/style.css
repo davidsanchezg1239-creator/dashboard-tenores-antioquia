@@ -745,11 +745,21 @@ html, body {
 
 .leaflet-map-frame {
   width: 100%;
-  height: 420px;
+  height: 440px;
+  background-color: #f8fafc;
+  background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
   z-index: 5;
+}
+
+/* Ocultar cualquier atribución o marca de agua de librerías */
+.leaflet-control-attribution {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 /* Rótulos flotantes de las Subregiones del Shapefile */
