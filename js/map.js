@@ -44,10 +44,10 @@ function initAntioquiaLeafletMap(containerId, onSelectSubregion) {
     <div class="map-controls-bar">
       <div class="map-layer-switcher">
         <span class="layer-switch-label">Capa Activa:</span>
-        <button class="layer-btn active" id="btnLayerSubregiones" title="Shapefile Oficial de la Gobernación de Antioquia">🗺️ Shapefile Subregiones</button>
-        <button class="layer-btn" id="btnLayerConMunicipios" title="Subregiones con subdivisión municipal">🏛️ Con Municipios</button>
+        <button class="layer-btn active" id="btnLayerSubregiones" title="Shapefile Oficial de la Gobernación de Antioquia">Subregiones (Shapefile Oficial)</button>
+        <button class="layer-btn" id="btnLayerConMunicipios" title="Subregiones con subdivisión municipal">División Municipal</button>
       </div>
-      <button class="btn-reset-map-view" id="btnResetMapView" title="Centrar mapa en Antioquia">🎯 Centrar</button>
+      <button class="btn-reset-map-view" id="btnResetMapView" title="Centrar mapa en Antioquia">Centrar Mapa</button>
     </div>
     <div class="map-legend-pills" id="mapLegendPills"></div>
     <div id="antioquiaLeafletMap" class="leaflet-map-frame"></div>
@@ -133,25 +133,12 @@ function renderLayers() {
     }
   }
 
-  // 2. Capa Con Municipios (Shapefile contornos + Municipios)
+  // 2. Capa Con Municipios (125 Municipios coloreados armoniosamente por Subregión)
   if (currentViewMode === "con_municipios") {
     if (typeof ANTIOQUIA_GEOJSON !== "undefined") {
       muniLayer = L.geoJSON(ANTIOQUIA_GEOJSON, {
         style: styleMuniFeature,
         onEachFeature: onEachMuniFeatureHandler
-      }).addTo(mapInstance);
-    }
-
-    if (typeof SUBREGIONES_OFICIALES_GEOJSON !== "undefined") {
-      subregOfficialLayer = L.geoJSON(SUBREGIONES_OFICIALES_GEOJSON, {
-        style: () => ({
-          fill: false,
-          color: '#0f172a',
-          weight: 2.5,
-          opacity: 0.9,
-          dashArray: '3, 2'
-        }),
-        interactive: false
       }).addTo(mapInstance);
     }
 
@@ -191,24 +178,28 @@ function renderSubregionCentroidLabels() {
 function styleOfficialSubregion(feature) {
   const subreg = feature.properties.subregion;
   const colors = SUBREGION_COLORS[subreg] || { fill: "#64748b", border: "#334155" };
-  const isSelected = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === subreg);
+  const isSelected = (activeSelectedSubregion === subreg);
+  const isAll = (activeSelectedSubregion === "ALL");
 
   return {
     fillColor: colors.fill,
-    weight: isSelected ? 2.5 : 1.2,
+    weight: isSelected ? 2.8 : 1.4,
     opacity: 1,
-    color: isSelected ? (activeSelectedSubregion === subreg ? '#f59e0b' : '#ffffff') : '#e2e8f0',
-    fillOpacity: isSelected ? (activeSelectedSubregion === subreg ? 0.88 : 0.70) : 0.20
+    color: colors.border,
+    fillOpacity: isAll ? 0.85 : (isSelected ? 0.95 : 0.22),
+    lineJoin: 'round',
+    lineCap: 'round'
   };
 }
 
 function onEachOfficialSubregionHandler(feature, layer) {
   const subreg = feature.properties.subregion;
+  const colors = SUBREGION_COLORS[subreg] || { fill: "#64748b", border: "#334155" };
 
   layer.on({
     mouseover: (e) => {
       const l = e.target;
-      l.setStyle({ weight: 4, color: '#f59e0b', fillOpacity: 0.95 });
+      l.setStyle({ weight: 3.2, color: colors.border, fillOpacity: 0.95, lineJoin: 'round', lineCap: 'round' });
       l.bringToFront();
 
       const sStats = currentStats[subreg] || { count: 0, total: 0, km: 0 };
@@ -222,13 +213,24 @@ function onEachOfficialSubregionHandler(feature, layer) {
           <div class="map-tt-line"><span>Contratos / Proyectos:</span> <strong>${sStats.count}</strong></div>
           <div class="map-tt-line"><span>Inversión Contratada:</span> <strong>${formattedSub}</strong></div>
           <div class="map-tt-line"><span>Longitud Vial Intervenida:</span> <strong>${sStats.km.toFixed(2)} km</strong></div>
-          <div class="map-tt-action">👆 Clic para filtrar toda la subregión</div>
+          <div class="map-tt-action">Haga clic para filtrar por esta subregión</div>
         </div>
       `;
       layer.bindTooltip(html, { sticky: true, className: 'leaflet-custom-tooltip', offset: [15, 0] }).openTooltip();
     },
     mouseout: (e) => {
-      if (subregOfficialLayer) subregOfficialLayer.resetStyle(e.target);
+      if (subregOfficialLayer) {
+        const isSelected = (activeSelectedSubregion === subreg);
+        const isAll = (activeSelectedSubregion === "ALL");
+        e.target.setStyle({
+          fillColor: colors.fill,
+          weight: isSelected ? 2.8 : 1.4,
+          color: colors.border,
+          fillOpacity: isAll ? 0.85 : (isSelected ? 0.95 : 0.22),
+          lineJoin: 'round',
+          lineCap: 'round'
+        });
+      }
     },
     click: () => {
       if (typeof onSubregionSelectCallback === "function") {
@@ -242,25 +244,29 @@ function onEachOfficialSubregionHandler(feature, layer) {
 function styleMuniFeature(feature) {
   const subreg = feature.properties.subregion;
   const colors = SUBREGION_COLORS[subreg] || { fill: "#64748b", border: "#334155" };
-  const isSelected = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === subreg);
+  const isSelected = (activeSelectedSubregion === subreg);
+  const isAll = (activeSelectedSubregion === "ALL");
 
   return {
     fillColor: colors.fill,
-    weight: isSelected ? 1 : 0.6,
-    opacity: 1,
-    color: '#ffffff',
-    fillOpacity: isSelected ? (activeSelectedSubregion === subreg ? 0.85 : 0.65) : 0.15
+    weight: isSelected ? 1.2 : 0.7,
+    opacity: 0.9,
+    color: colors.border,
+    fillOpacity: isAll ? 0.80 : (isSelected ? 0.92 : 0.20),
+    lineJoin: 'round',
+    lineCap: 'round'
   };
 }
 
 function onEachMuniFeatureHandler(feature, layer) {
   const muni = feature.properties.municipio;
   const subreg = feature.properties.subregion;
+  const colors = SUBREGION_COLORS[subreg] || { fill: "#64748b", border: "#334155" };
 
   layer.on({
     mouseover: (e) => {
       const l = e.target;
-      l.setStyle({ weight: 3, color: '#f59e0b', fillOpacity: 0.95 });
+      l.setStyle({ weight: 2.2, color: colors.border, fillOpacity: 0.95, lineJoin: 'round', lineCap: 'round' });
       l.bringToFront();
 
       const sStats = currentStats[subreg] || { count: 0, total: 0, km: 0 };
@@ -277,13 +283,25 @@ function onEachMuniFeatureHandler(feature, layer) {
           <div class="map-tt-line"><span>Inversión en ${muni}:</span> <strong>${mStats.total > 0 ? formattedMuni : '$ 0'}</strong></div>
           <div class="map-tt-divider"></div>
           <div class="map-tt-line"><span>Total Subregión:</span> <strong>${sStats.count} proy. (${formattedSub})</strong></div>
-          <div class="map-tt-action">👆 Clic para filtrar ${subreg}</div>
+          <div class="map-tt-action">Haga clic para filtrar por ${subreg}</div>
         </div>
       `;
       layer.bindTooltip(html, { sticky: true, className: 'leaflet-custom-tooltip', offset: [15, 0] }).openTooltip();
     },
     mouseout: (e) => {
-      if (muniLayer) muniLayer.resetStyle(e.target);
+      if (muniLayer) {
+        const isSelected = (activeSelectedSubregion === subreg);
+        const isAll = (activeSelectedSubregion === "ALL");
+        e.target.setStyle({
+          fillColor: colors.fill,
+          weight: isSelected ? 1.2 : 0.7,
+          opacity: 0.9,
+          color: colors.border,
+          fillOpacity: isAll ? 0.80 : (isSelected ? 0.92 : 0.20),
+          lineJoin: 'round',
+          lineCap: 'round'
+        });
+      }
     },
     click: () => {
       if (typeof onSubregionSelectCallback === "function") {
@@ -309,28 +327,42 @@ function highlightSubregionInMap(selectedSubregion) {
   if (subregOfficialLayer && currentViewMode === "subregiones") {
     subregOfficialLayer.eachLayer(layer => {
       const sub = layer.feature.properties.subregion;
-      const isMatch = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === sub);
+      const isSelected = (activeSelectedSubregion === sub);
+      const isAll = (activeSelectedSubregion === "ALL");
       const colors = SUBREGION_COLORS[sub] || { fill: "#64748b", border: "#334155" };
+      
       layer.setStyle({
         fillColor: colors.fill,
-        fillOpacity: isMatch ? (activeSelectedSubregion === sub ? 0.90 : 0.70) : 0.20,
-        weight: activeSelectedSubregion === sub ? 3.5 : 1.2,
-        color: activeSelectedSubregion === sub ? '#f59e0b' : '#ffffff'
+        fillOpacity: isAll ? 0.85 : (isSelected ? 0.95 : 0.22),
+        weight: isSelected ? 2.8 : 1.4,
+        color: colors.border,
+        lineJoin: 'round',
+        lineCap: 'round'
       });
+      if (isSelected) {
+        layer.bringToFront();
+      }
     });
   }
 
   if (muniLayer && currentViewMode === "con_municipios") {
     muniLayer.eachLayer(layer => {
       const sub = layer.feature.properties.subregion;
-      const isMatch = (activeSelectedSubregion === "ALL" || activeSelectedSubregion === sub);
+      const isSelected = (activeSelectedSubregion === sub);
+      const isAll = (activeSelectedSubregion === "ALL");
       const colors = SUBREGION_COLORS[sub] || { fill: "#64748b", border: "#334155" };
+      
       layer.setStyle({
         fillColor: colors.fill,
-        fillOpacity: isMatch ? (activeSelectedSubregion === sub ? 0.85 : 0.65) : 0.15,
-        weight: activeSelectedSubregion === sub ? 2.5 : 1,
-        color: activeSelectedSubregion === sub ? '#f59e0b' : '#ffffff'
+        fillOpacity: isAll ? 0.80 : (isSelected ? 0.92 : 0.20),
+        weight: isSelected ? 1.5 : 0.7,
+        color: colors.border,
+        lineJoin: 'round',
+        lineCap: 'round'
       });
+      if (isSelected) {
+        layer.bringToFront();
+      }
     });
   }
 

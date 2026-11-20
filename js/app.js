@@ -293,7 +293,7 @@ const App = {
           </div>
         </div>
 
-        <h4 class="tenores-title">📊 Tenores y Dimensiones de Obra</h4>
+        <h4 class="tenores-title">Tenores y Dimensiones de Obra</h4>
         <div class="tenores-grid">
           <div class="tenor-card">
             <div class="tenor-name">Longitud de Vía</div>
@@ -385,7 +385,7 @@ const App = {
         </div>
 
         <div class="selection-callout">
-          💡 <em>Haz clic en cualquier proyecto de la lista o en una subregión del mapa para consultar su ficha técnica y tenores individuales.</em>
+          <em>Seleccione cualquier proyecto del listado o una subregión del mapa para consultar su ficha técnica y tenores individuales.</em>
         </div>
       `;
     }
