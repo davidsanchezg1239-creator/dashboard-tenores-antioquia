@@ -752,6 +752,40 @@ html, body {
   z-index: 5;
 }
 
+/* Rótulos flotantes de las Subregiones del Shapefile */
+.custom-subreg-div-icon {
+  background: none !important;
+  border: none !important;
+}
+
+.subregion-map-badge {
+  background: rgba(15, 23, 42, 0.90);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  letter-spacing: 0.04em;
+}
+
+.subregion-map-badge .badge-subcount {
+  background: #f59e0b;
+  color: #000000;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-size: 8px;
+  font-weight: 900;
+}
+
 /* Tooltip geográfico enriquecido de Leaflet */
 .leaflet-custom-tooltip {
   background: rgba(15, 23, 42, 0.95) !important;
