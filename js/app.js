@@ -567,96 +567,9 @@ const App = {
     highlightSubregionInMap(this.activeFilters.subregion);
   },
 
-  // Renderizado de las tablas de tenores especializados (Pavimento Rígido, Estabilización, Alcantarillas, Box Culvert, Muros)
+  // Renderizado de las tablas de tenores especializados (Alcantarillas, Box Culvert, Muros)
   renderSpecialTenores() {
-    // 1. Pavimento Rígido y Liquidado (de la BD oficial de proyectos)
-    const pavRigidoContainer = document.getElementById("tablePavRigidoBody");
-    if (pavRigidoContainer && this.data.projects) {
-      const rigidoProjects = this.data.projects.filter(p => p.pavimentoRigidoKm || p.pavimentoRigidoLiquidadoKm);
-      let rigidoHtml = "";
-      rigidoProjects.forEach((p) => {
-        rigidoHtml += `
-          <tr>
-            <td class="text-center">
-              <button class="btn-select-row" data-id="${p.id}" title="Seleccionar y ver ficha técnica">
-                Ver Ficha
-              </button>
-            </td>
-            <td><strong>${p.proyecto}</strong></td>
-            <td>${p.subregion}</td>
-            <td>${p.municipio}</td>
-            <td class="text-center">${p.year || "—"}</td>
-            <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
-            <td class="text-right highlight-cell"><strong>${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) + "/km" : "—"}</strong></td>
-            <td class="text-right">${p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) + "/km" : "—"}</td>
-            <td class="text-right">${p.valorInvertido ? this.formatCurrency(p.valorInvertido) : "—"}</td>
-          </tr>
-        `;
-      });
-      pavRigidoContainer.innerHTML = rigidoHtml;
-
-      pavRigidoContainer.querySelectorAll(".btn-select-row").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = parseInt(btn.dataset.id);
-          const proj = this.data.projects.find(p => p.id === id);
-          if (proj) {
-            this.selectedProject = proj;
-            this.renderInfoPanel();
-            this.renderProjectsListPreview();
-            if (proj.subregion && proj.subregion !== "GENERAL" && typeof highlightSubregionInMap === "function") {
-              highlightSubregionInMap(proj.subregion);
-            }
-            const mainPanel = document.querySelector(".info-panel-card");
-            if (mainPanel) mainPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        });
-      });
-    }
-
-    // 2. Estabilización de Vías (de la BD oficial de proyectos)
-    const estabContainer = document.getElementById("tableEstabilizacionBody");
-    if (estabContainer && this.data.projects) {
-      const estabProjects = this.data.projects.filter(p => p.tenorEstabilizacionKm);
-      let estabHtml = "";
-      estabProjects.forEach((p) => {
-        estabHtml += `
-          <tr>
-            <td class="text-center">
-              <button class="btn-select-row" data-id="${p.id}" title="Seleccionar y ver ficha técnica">
-                Ver Ficha
-              </button>
-            </td>
-            <td><strong>${p.proyecto}</strong></td>
-            <td>${p.subregion}</td>
-            <td>${p.municipio}</td>
-            <td class="text-center">${p.year || "—"}</td>
-            <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
-            <td class="text-right highlight-cell"><strong>${p.tenorEstabilizacionKm ? this.formatCurrency(p.tenorEstabilizacionKm) + "/km" : "—"}</strong></td>
-            <td class="text-right">${p.valorInvertido ? this.formatCurrency(p.valorInvertido) : "—"}</td>
-          </tr>
-        `;
-      });
-      estabContainer.innerHTML = estabHtml;
-
-      estabContainer.querySelectorAll(".btn-select-row").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = parseInt(btn.dataset.id);
-          const proj = this.data.projects.find(p => p.id === id);
-          if (proj) {
-            this.selectedProject = proj;
-            this.renderInfoPanel();
-            this.renderProjectsListPreview();
-            if (proj.subregion && proj.subregion !== "GENERAL" && typeof highlightSubregionInMap === "function") {
-              highlightSubregionInMap(proj.subregion);
-            }
-            const mainPanel = document.querySelector(".info-panel-card");
-            if (mainPanel) mainPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        });
-      });
-    }
-
-    // 3. Alcantarillas
+    // 1. Alcantarillas
     const alcContainer = document.getElementById("tableAlcantarillasBody");
     if (alcContainer && this.data.alcantarillas) {
       let alcHtml = "";
