@@ -47,8 +47,11 @@ const App = {
   // Carga de datos (con soporte de persistencia local si el admin actualizó)
   loadData() {
     this.data = DB_INITIAL_DATA;
+    const DB_SCHEMA_VERSION = "20261127_sif3_v2";
+    const savedVersion = localStorage.getItem("antioquia_infraestructura_version");
     const saved = localStorage.getItem("antioquia_infraestructura_data");
-    if (saved) {
+    
+    if (saved && savedVersion === DB_SCHEMA_VERSION) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.projects && parsed.projects.length >= DB_INITIAL_DATA.projects.length) {
@@ -59,6 +62,9 @@ const App = {
       } catch (e) {
         this.data = DB_INITIAL_DATA;
       }
+    } else {
+      localStorage.removeItem("antioquia_infraestructura_data");
+      localStorage.setItem("antioquia_infraestructura_version", DB_SCHEMA_VERSION);
     }
   },
 
@@ -316,13 +322,12 @@ const App = {
           </div>
           <div class="tenor-card">
             <div class="tenor-name">Pavimento Rígido</div>
-            <div class="tenor-val">${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) + "/km" : (p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) + "/km (Liq.)" : "—")}</div>
+            <div class="tenor-val">${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) + "/km" : "—"}</div>
           </div>
-          ${p.pavimentoRigidoLiquidadoKm ? `
           <div class="tenor-card">
             <div class="tenor-name">Pav. Rígido Liquidado</div>
-            <div class="tenor-val">${this.formatCurrency(p.pavimentoRigidoLiquidadoKm)}/km</div>
-          </div>` : ''}
+            <div class="tenor-val">${p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) + "/km" : "—"}</div>
+          </div>
           <div class="tenor-card">
             <div class="tenor-name">Tenor Puente</div>
             <div class="tenor-val">${p.tenorPuenteMl ? this.formatCurrency(p.tenorPuenteMl) + "/mL" : "—"}</div>
@@ -346,7 +351,10 @@ const App = {
       let countKm = 0;
       let placaHuellaVals = [];
       let pavFlexVals = [];
+      let pavRigidoVals = [];
+      let pavRigidoLiqVals = [];
       let puenteVals = [];
+      let estabVals = [];
 
       this.filteredProjects.forEach(p => {
         if (p.valorInvertido) totalInversion += p.valorInvertido;
@@ -356,12 +364,18 @@ const App = {
         }
         if (p.tenorPlacaHuellaKm) placaHuellaVals.push(p.tenorPlacaHuellaKm);
         if (p.tenorPavimentoFlexibleKm) pavFlexVals.push(p.tenorPavimentoFlexibleKm);
+        if (p.pavimentoRigidoKm) pavRigidoVals.push(p.pavimentoRigidoKm);
+        if (p.pavimentoRigidoLiquidadoKm) pavRigidoLiqVals.push(p.pavimentoRigidoLiquidadoKm);
         if (p.tenorPuenteMl) puenteVals.push(p.tenorPuenteMl);
+        if (p.tenorEstabilizacionKm) estabVals.push(p.tenorEstabilizacionKm);
       });
 
       const avgPlacaHuella = placaHuellaVals.length ? (placaHuellaVals.reduce((a, b) => a + b, 0) / placaHuellaVals.length) : null;
       const avgPavFlex = pavFlexVals.length ? (pavFlexVals.reduce((a, b) => a + b, 0) / pavFlexVals.length) : null;
+      const avgPavRigido = pavRigidoVals.length ? (pavRigidoVals.reduce((a, b) => a + b, 0) / pavRigidoVals.length) : null;
+      const avgPavRigidoLiq = pavRigidoLiqVals.length ? (pavRigidoLiqVals.reduce((a, b) => a + b, 0) / pavRigidoLiqVals.length) : null;
       const avgPuente = puenteVals.length ? (puenteVals.reduce((a, b) => a + b, 0) / puenteVals.length) : null;
+      const avgEstab = estabVals.length ? (estabVals.reduce((a, b) => a + b, 0) / estabVals.length) : null;
 
       container.innerHTML = `
         <div class="consolidated-header">
@@ -390,9 +404,33 @@ const App = {
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-label">Tenor Prom. Pavimento</div>
+            <div class="kpi-label">Tenor Prom. Pav. Flexible</div>
             <div class="kpi-value">${avgPavFlex ? this.formatCompactCurrency(avgPavFlex) + "/km" : "N/D"}</div>
-            <div class="kpi-footnote">vías departamentales</div>
+            <div class="kpi-footnote">${pavFlexVals.length} tramos evaluados</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Tenor Prom. Pavimento Rígido</div>
+            <div class="kpi-value">${avgPavRigido ? this.formatCompactCurrency(avgPavRigido) + "/km" : "N/D"}</div>
+            <div class="kpi-footnote">${pavRigidoVals.length} tramos evaluados</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Tenor Prom. Pav. Rígido Liquidado</div>
+            <div class="kpi-value">${avgPavRigidoLiq ? this.formatCompactCurrency(avgPavRigidoLiq) + "/km" : "N/D"}</div>
+            <div class="kpi-footnote">${pavRigidoLiqVals.length} contratos liquidados</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Tenor Prom. Puentes</div>
+            <div class="kpi-value">${avgPuente ? this.formatCompactCurrency(avgPuente) + "/mL" : "N/D"}</div>
+            <div class="kpi-footnote">${puenteVals.length} puentes evaluados</div>
+          </div>
+
+          <div class="kpi-card" style="grid-column: span 2;">
+            <div class="kpi-label">Tenor Prom. Estabilización</div>
+            <div class="kpi-value">${avgEstab ? this.formatCompactCurrency(avgEstab) + "/km" : "N/D"}</div>
+            <div class="kpi-footnote">${estabVals.length} tramos evaluados</div>
           </div>
         </div>
 
@@ -423,6 +461,8 @@ const App = {
             <span class="subreg-tag">${p.subregion}</span>
             <span class="muni-tag">${p.municipio}</span>
             <span class="val-tag">${p.valorInvertido ? this.formatCompactCurrency(p.valorInvertido) : "N/D"}</span>
+            ${p.pavimentoRigidoKm ? `<span class="val-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Pav. Rígido</span>` : ''}
+            ${p.pavimentoRigidoLiquidadoKm ? `<span class="val-tag" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">Pav. Rígido Liq.</span>` : ''}
           </div>
         </div>
       `;
@@ -573,8 +613,10 @@ const App = {
           <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
           <td class="text-right">${p.tenorPlacaHuellaKm ? this.formatCompactCurrency(p.tenorPlacaHuellaKm) : "—"}</td>
           <td class="text-right">${p.tenorPavimentoFlexibleKm ? this.formatCompactCurrency(p.tenorPavimentoFlexibleKm) : "—"}</td>
-          <td class="text-right">${p.pavimentoRigidoKm ? this.formatCompactCurrency(p.pavimentoRigidoKm) : (p.pavimentoRigidoLiquidadoKm ? this.formatCompactCurrency(p.pavimentoRigidoLiquidadoKm) + " (Liq.)" : "—")}</td>
+          <td class="text-right">${p.pavimentoRigidoKm ? this.formatCompactCurrency(p.pavimentoRigidoKm) : "—"}</td>
+          <td class="text-right highlight-cell">${p.pavimentoRigidoLiquidadoKm ? this.formatCompactCurrency(p.pavimentoRigidoLiquidadoKm) : "—"}</td>
           <td class="text-right">${p.tenorPuenteMl ? this.formatCompactCurrency(p.tenorPuenteMl) : "—"}</td>
+          <td class="text-right">${p.tenorEstabilizacionKm ? this.formatCompactCurrency(p.tenorEstabilizacionKm) : "—"}</td>
         </tr>
       `;
     });
@@ -612,20 +654,37 @@ const App = {
 
   // Exportar proyectos filtrados a CSV
   exportFilteredToCsv() {
-    const headers = ["ID", "PROYECTO", "SUBREGION", "MUNICIPIO", "TIPOLOGIA", "AÑO", "VALOR INVERTIDO (COP)", "LONGITUD (KM)", "TENOR PLACA HUELLA ($/KM)", "TENOR PAVIMENTO FLEXIBLE ($/KM)", "PAVIMENTO RIGIDO ($/KM)", "TENOR PUENTE ($/ML)"];
+    const headers = [
+      "ID",
+      "PROYECTO",
+      "SUBREGION",
+      "MUNICIPIO",
+      "TIPOLOGIA",
+      "AÑO",
+      "VALOR INVERTIDO (COP)",
+      "LONGITUD (KM)",
+      "TENOR PLACA HUELLA ($/KM)",
+      "TENOR PAVIMENTO FLEXIBLE ($/KM)",
+      "PAVIMENTO RIGIDO ($/KM)",
+      "PAVIMENTO RIGIDO LIQUIDADO ($/KM)",
+      "TENOR PUENTE ($/ML)",
+      "TENOR ESTABILIZACION ($/KM)"
+    ];
     const rows = this.filteredProjects.map((p, idx) => [
       idx + 1,
-      `"${p.proyecto.replace(/"/g, '""')}"`,
-      p.subregion,
-      p.municipio,
-      `"${p.tipologia}"`,
+      `"${(p.proyecto || "").replace(/"/g, '""')}"`,
+      p.subregion || "",
+      p.municipio || "",
+      `"${(p.tipologia || "").replace(/"/g, '""')}"`,
       p.year || "",
       p.valorInvertido || "",
       p.longitudKm || "",
       p.tenorPlacaHuellaKm || "",
       p.tenorPavimentoFlexibleKm || "",
-      p.pavimentoRigidoKm || p.pavimentoRigidoLiquidadoKm || "",
-      p.tenorPuenteMl || ""
+      p.pavimentoRigidoKm || "",
+      p.pavimentoRigidoLiquidadoKm || "",
+      p.tenorPuenteMl || "",
+      p.tenorEstabilizacionKm || ""
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
@@ -676,28 +735,60 @@ const App = {
         }
 
         const headers = jsonRows[0].map(h => String(h || "").trim().toUpperCase());
+        const colMap = {
+          proyecto: 0,
+          fecha: 1,
+          valorInvertido: 2,
+          tipologia: 3,
+          subregion: 4,
+          municipio: 5,
+          longitud: 6,
+          puente: 7,
+          pavFlex: 8,
+          placaHuella: 9,
+          pavRigido: 10,
+          estabiliz: 11,
+          pavRigidoLiq: 12
+        };
+
+        headers.forEach((h, idx) => {
+          if (h.includes("PROYECTO")) colMap.proyecto = idx;
+          else if (h.includes("FECHA")) colMap.fecha = idx;
+          else if (h.includes("VALOR") || h.includes("INVERT")) colMap.valorInvertido = idx;
+          else if (h.includes("TIPOLOG")) colMap.tipologia = idx;
+          else if (h.includes("SUBREG")) colMap.subregion = idx;
+          else if (h.includes("MUNICIP")) colMap.municipio = idx;
+          else if (h.includes("LONGITUD")) colMap.longitud = idx;
+          else if (h.includes("PUENTE")) colMap.puente = idx;
+          else if (h.includes("FLEXIBLE")) colMap.pavFlex = idx;
+          else if (h.includes("PLACA")) colMap.placaHuella = idx;
+          else if (h.includes("RIGIDO") && h.includes("LIQ")) colMap.pavRigidoLiq = idx;
+          else if (h.includes("RIGIDO")) colMap.pavRigido = idx;
+          else if (h.includes("ESTABILIZ")) colMap.estabiliz = idx;
+        });
+
         const newProjects = [];
 
         for (let i = 1; i < jsonRows.length; i++) {
           const row = jsonRows[i];
-          if (!row || !row.length || !row[0]) continue;
+          if (!row || !row.length || !row[colMap.proyecto]) continue;
 
-          // Mapeo básico inteligente de columnas
           const projObj = {
             id: this.data.projects.length + newProjects.length + 1,
-            proyecto: String(row[0] || "").trim(),
-            fecha: String(row[1] || "").trim(),
-            year: this.extractYearFromStr(String(row[1] || "")),
-            valorInvertido: this.cleanNumber(row[2]),
-            tipologia: String(row[3] || "No especificada").trim(),
-            subregion: String(row[4] || "GENERAL").trim().toUpperCase(),
-            municipio: String(row[5] || "GENERAL").trim().toUpperCase(),
-            longitudKm: this.cleanNumber(row[6]),
-            tenorPuenteMl: this.cleanNumber(row[7]),
-            tenorPavimentoFlexibleKm: this.cleanNumber(row[8]),
-            tenorPlacaHuellaKm: this.cleanNumber(row[9]),
-            pavimentoRigidoKm: this.cleanNumber(row[10]),
-            tenorEstabilizacionKm: this.cleanNumber(row[11]),
+            proyecto: String(row[colMap.proyecto] || "").trim(),
+            fecha: String(row[colMap.fecha] || "").trim(),
+            year: this.extractYearFromStr(String(row[colMap.fecha] || "")),
+            valorInvertido: this.cleanNumber(row[colMap.valorInvertido]),
+            tipologia: String(row[colMap.tipologia] || "No especificada").trim(),
+            subregion: String(row[colMap.subregion] || "GENERAL").trim().toUpperCase(),
+            municipio: String(row[colMap.municipio] || "GENERAL").trim().toUpperCase(),
+            longitudKm: this.cleanNumber(row[colMap.longitud]),
+            tenorPuenteMl: this.cleanNumber(row[colMap.puente]),
+            tenorPavimentoFlexibleKm: this.cleanNumber(row[colMap.pavFlex]),
+            tenorPlacaHuellaKm: this.cleanNumber(row[colMap.placaHuella]),
+            pavimentoRigidoKm: this.cleanNumber(row[colMap.pavRigido]),
+            tenorEstabilizacionKm: this.cleanNumber(row[colMap.estabiliz]),
+            pavimentoRigidoLiquidadoKm: this.cleanNumber(row[colMap.pavRigidoLiq]),
             valorPagado: null,
             tenorContractual: null
           };
@@ -707,6 +798,7 @@ const App = {
         if (newProjects.length > 0) {
           this.data.projects = [...this.data.projects, ...newProjects];
           localStorage.setItem("antioquia_infraestructura_data", JSON.stringify(this.data));
+          localStorage.setItem("antioquia_infraestructura_version", "20261127_sif3_v2");
           this.initFilterSelectors();
           this.applyFilters();
           alert(`¡Éxito! Se cargaron ${newProjects.length} nuevos proyectos a la base de datos.`);
