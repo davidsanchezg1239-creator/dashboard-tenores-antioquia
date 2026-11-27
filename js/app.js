@@ -277,6 +277,9 @@ const App = {
       if (componente === "ESTABILIZACION" && !p.tenorEstabilizacionKm) {
         return false;
       }
+      if (componente === "ESTABILIZACION_LIQ" && !p.tenorEstabilizacionLiquidadaKm) {
+        return false;
+      }
       if (componente === "PAV_FLEXIBLE" && !p.tenorPavimentoFlexibleKm) {
         return false;
       }
@@ -369,6 +372,10 @@ const App = {
             <div class="tenor-name">Estabilización</div>
             <div class="tenor-val">${p.tenorEstabilizacionKm ? this.formatCurrency(p.tenorEstabilizacionKm) + "/km" : "—"}</div>
           </div>
+          <div class="tenor-card">
+            <div class="tenor-name">Estabilización Liquidada</div>
+            <div class="tenor-val">${p.tenorEstabilizacionLiquidadaKm ? this.formatCurrency(p.tenorEstabilizacionLiquidadaKm) + "/km" : "—"}</div>
+          </div>
         </div>
       `;
 
@@ -388,6 +395,7 @@ const App = {
       let pavRigidoLiqVals = [];
       let puenteVals = [];
       let estabVals = [];
+      let estabLiqVals = [];
 
       this.filteredProjects.forEach(p => {
         if (p.valorInvertido) totalInversion += p.valorInvertido;
@@ -401,6 +409,7 @@ const App = {
         if (p.pavimentoRigidoLiquidadoKm) pavRigidoLiqVals.push(p.pavimentoRigidoLiquidadoKm);
         if (p.tenorPuenteMl) puenteVals.push(p.tenorPuenteMl);
         if (p.tenorEstabilizacionKm) estabVals.push(p.tenorEstabilizacionKm);
+        if (p.tenorEstabilizacionLiquidadaKm) estabLiqVals.push(p.tenorEstabilizacionLiquidadaKm);
       });
 
       const avgPlacaHuella = placaHuellaVals.length ? (placaHuellaVals.reduce((a, b) => a + b, 0) / placaHuellaVals.length) : null;
@@ -409,6 +418,7 @@ const App = {
       const avgPavRigidoLiq = pavRigidoLiqVals.length ? (pavRigidoLiqVals.reduce((a, b) => a + b, 0) / pavRigidoLiqVals.length) : null;
       const avgPuente = puenteVals.length ? (puenteVals.reduce((a, b) => a + b, 0) / puenteVals.length) : null;
       const avgEstab = estabVals.length ? (estabVals.reduce((a, b) => a + b, 0) / estabVals.length) : null;
+      const avgEstabLiq = estabLiqVals.length ? (estabLiqVals.reduce((a, b) => a + b, 0) / estabLiqVals.length) : null;
 
       container.innerHTML = `
         <div class="consolidated-header">
@@ -460,10 +470,16 @@ const App = {
             <div class="kpi-footnote">${puenteVals.length} puentes evaluados</div>
           </div>
 
-          <div class="kpi-card" style="grid-column: span 2;">
+          <div class="kpi-card">
             <div class="kpi-label">Tenor Prom. Estabilización</div>
             <div class="kpi-value">${avgEstab ? this.formatCompactCurrency(avgEstab) + "/km" : "N/D"}</div>
             <div class="kpi-footnote">${estabVals.length} tramos evaluados</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Tenor Prom. Estabilización Liq.</div>
+            <div class="kpi-value">${avgEstabLiq ? this.formatCompactCurrency(avgEstabLiq) + "/km" : "N/D"}</div>
+            <div class="kpi-footnote">${estabLiqVals.length} tramos evaluados</div>
           </div>
         </div>
 
@@ -499,6 +515,7 @@ const App = {
             ${p.pavimentoRigidoKm ? `<span class="tenor-pill rigido" title="Pavimento Rígido: ${this.formatCurrency(p.pavimentoRigidoKm)}/km">Pav. Rígido: ${this.formatCurrency(p.pavimentoRigidoKm)}/km</span>` : ''}
             ${p.pavimentoRigidoLiquidadoKm ? `<span class="tenor-pill rigido-liq" title="Pav. Rígido Liquidado: ${this.formatCurrency(p.pavimentoRigidoLiquidadoKm)}/km">Pav. Rígido Liq.: ${this.formatCurrency(p.pavimentoRigidoLiquidadoKm)}/km</span>` : ''}
             ${p.tenorEstabilizacionKm ? `<span class="tenor-pill estab" title="Estabilización: ${this.formatCurrency(p.tenorEstabilizacionKm)}/km">Estabilización: ${this.formatCurrency(p.tenorEstabilizacionKm)}/km</span>` : ''}
+            ${p.tenorEstabilizacionLiquidadaKm ? `<span class="tenor-pill estab" title="Estabilización Liquidada: ${this.formatCurrency(p.tenorEstabilizacionLiquidadaKm)}/km">Estab. Liq.: ${this.formatCurrency(p.tenorEstabilizacionLiquidadaKm)}/km</span>` : ''}
             ${p.tenorPavimentoFlexibleKm ? `<span class="tenor-pill flexible" title="Pav. Flexible: ${this.formatCurrency(p.tenorPavimentoFlexibleKm)}/km">Pav. Flexible: ${this.formatCurrency(p.tenorPavimentoFlexibleKm)}/km</span>` : ''}
             ${p.tenorPlacaHuellaKm ? `<span class="tenor-pill placahuella" title="Placa Huella: ${this.formatCurrency(p.tenorPlacaHuellaKm)}/km">Placa Huella: ${this.formatCurrency(p.tenorPlacaHuellaKm)}/km</span>` : ''}
             ${p.tenorPuenteMl ? `<span class="tenor-pill puente" title="Puente: ${this.formatCurrency(p.tenorPuenteMl)}/mL">Puente: ${this.formatCurrency(p.tenorPuenteMl)}/mL</span>` : ''}
@@ -656,6 +673,7 @@ const App = {
           <td class="text-right highlight-cell" title="${p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) : ''}"><strong>${p.pavimentoRigidoLiquidadoKm ? this.formatCompactCurrency(p.pavimentoRigidoLiquidadoKm) : "—"}</strong></td>
           <td class="text-right" title="${p.tenorPuenteMl ? this.formatCurrency(p.tenorPuenteMl) : ''}">${p.tenorPuenteMl ? this.formatCompactCurrency(p.tenorPuenteMl) : "—"}</td>
           <td class="text-right highlight-cell" title="${p.tenorEstabilizacionKm ? this.formatCurrency(p.tenorEstabilizacionKm) : ''}"><strong>${p.tenorEstabilizacionKm ? this.formatCompactCurrency(p.tenorEstabilizacionKm) : "—"}</strong></td>
+          <td class="text-right highlight-cell" title="${p.tenorEstabilizacionLiquidadaKm ? this.formatCurrency(p.tenorEstabilizacionLiquidadaKm) : ''}"><strong>${p.tenorEstabilizacionLiquidadaKm ? this.formatCompactCurrency(p.tenorEstabilizacionLiquidadaKm) : "—"}</strong></td>
         </tr>
       `;
     });
@@ -707,7 +725,8 @@ const App = {
       "PAVIMENTO RIGIDO ($/KM)",
       "PAVIMENTO RIGIDO LIQUIDADO ($/KM)",
       "TENOR PUENTE ($/ML)",
-      "TENOR ESTABILIZACION ($/KM)"
+      "TENOR ESTABILIZACION ($/KM)",
+      "TENOR ESTABILIZACION LIQUIDADA ($/KM)"
     ];
     const rows = this.filteredProjects.map((p, idx) => [
       idx + 1,
@@ -723,7 +742,8 @@ const App = {
       p.pavimentoRigidoKm || "",
       p.pavimentoRigidoLiquidadoKm || "",
       p.tenorPuenteMl || "",
-      p.tenorEstabilizacionKm || ""
+      p.tenorEstabilizacionKm || "",
+      p.tenorEstabilizacionLiquidadaKm || ""
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
@@ -1048,7 +1068,7 @@ const App = {
     const municipio = document.getElementById("inpProjMunicipio").value.trim();
     const tipologia = document.getElementById("inpProjTipologia").value.trim();
     const year = parseInt(document.getElementById("inpProjYear").value) || new Date().getFullYear();
-    const fecha = document.getElementById("inpProjFecha").value.trim() || `${year}-01-01`;
+    const fecha = document.getElementById("inpProjFecha").value.trim();
     const inversion = this.cleanNumber(document.getElementById("inpProjInversion").value);
 
     if (!nombre) {
@@ -1064,7 +1084,15 @@ const App = {
       return;
     }
     if (!tipologia) {
-      alert("Por favor ingrese la tipología de obra.");
+      alert("Por favor seleccione la tipología de obra.");
+      return;
+    }
+    if (!year) {
+      alert("Por favor ingrese el año del contrato.");
+      return;
+    }
+    if (!fecha) {
+      alert("Por favor ingrese la fecha de formalización.");
       return;
     }
     if (!inversion || inversion <= 0) {
@@ -1072,13 +1100,14 @@ const App = {
       return;
     }
 
-    const longitud = this.cleanNumber(document.getElementById("inpProjLongitud").value);
-    const pavRigido = this.cleanNumber(document.getElementById("inpProjPavRigido").value);
-    const pavRigidoLiq = this.cleanNumber(document.getElementById("inpProjPavRigidoLiq").value);
-    const estabilizacion = this.cleanNumber(document.getElementById("inpProjEstabilizacion").value);
-    const pavFlex = this.cleanNumber(document.getElementById("inpProjPavFlex").value);
-    const placaHuella = this.cleanNumber(document.getElementById("inpProjPlacaHuella").value);
-    const puente = this.cleanNumber(document.getElementById("inpProjPuente").value);
+    const longitud = this.cleanNumber(document.getElementById("inpProjLongitud")?.value);
+    const pavRigido = this.cleanNumber(document.getElementById("inpProjPavRigido")?.value);
+    const pavRigidoLiq = this.cleanNumber(document.getElementById("inpProjPavRigidoLiq")?.value);
+    const estabilizacion = this.cleanNumber(document.getElementById("inpProjEstabilizacion")?.value);
+    const estabilizacionLiq = this.cleanNumber(document.getElementById("inpProjEstabilizacionLiq")?.value);
+    const pavFlex = this.cleanNumber(document.getElementById("inpProjPavFlex")?.value);
+    const placaHuella = this.cleanNumber(document.getElementById("inpProjPlacaHuella")?.value);
+    const puente = this.cleanNumber(document.getElementById("inpProjPuente")?.value);
 
     const newId = this.data.projects.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
 
@@ -1097,6 +1126,7 @@ const App = {
       tenorPlacaHuellaKm: placaHuella,
       pavimentoRigidoKm: pavRigido,
       tenorEstabilizacionKm: estabilizacion,
+      tenorEstabilizacionLiquidadaKm: estabilizacionLiq,
       pavimentoRigidoLiquidadoKm: pavRigidoLiq,
       valorPagado: null,
       tenorContractual: null
@@ -1107,7 +1137,7 @@ const App = {
 
     // Guardar en localStorage para persistencia local de la sesión
     localStorage.setItem("antioquia_infraestructura_data", JSON.stringify(this.data));
-    localStorage.setItem("antioquia_infraestructura_version", "20261127_sif3_v4_addproj");
+    localStorage.setItem("antioquia_infraestructura_version", "20261127_sif3_v5_establiq");
 
     // Actualizar selectores y vistas
     this.initFilterSelectors();

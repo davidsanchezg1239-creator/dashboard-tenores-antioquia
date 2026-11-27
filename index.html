@@ -6,7 +6,7 @@
   <title>Dashboard de Tenores de Obra Civil | Gobernación de Antioquia</title>
   
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
 
   <!-- Leaflet.js CSS para Cartografía Real GIS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -335,25 +335,37 @@
             </div>
             <div class="form-field">
               <label for="inpProjTipologia">Tipología de Obra *</label>
-              <input type="text" id="inpProjTipologia" list="tipologiasDatalist" placeholder="Ej: Construcción vial, Placa huella..." required>
-              <datalist id="tipologiasDatalist">
-                <option value="Construcción vial">
-                <option value="Mejoramiento vial">
-                <option value="Placa huella">
-                <option value="Estabilización">
-                <option value="Mantenimiento / conservación vial">
-                <option value="Construcción de puente">
-                <option value="Seguridad vial / señalización">
-                <option value="PAP">
-              </datalist>
+              <select id="inpProjTipologia" required>
+                <option value="">Seleccione una tipología...</option>
+                <option value="Consolidado / Mejoramiento vial / Estabilización">Consolidado / Mejoramiento vial / Estabilización</option>
+                <option value="Construcción de muro de contención">Construcción de muro de contención</option>
+                <option value="Construcción de puente">Construcción de puente</option>
+                <option value="Construcción de puente / Mejoramiento vial">Construcción de puente / Mejoramiento vial</option>
+                <option value="Construcción vial">Construcción vial</option>
+                <option value="Consultoría">Consultoría</option>
+                <option value="Contrato interadministrativo">Contrato interadministrativo</option>
+                <option value="Espacio público / recreación">Espacio público / recreación</option>
+                <option value="Estabilización">Estabilización</option>
+                <option value="Infraestructura cultural">Infraestructura cultural</option>
+                <option value="Infraestructura social / cultural">Infraestructura social / cultural</option>
+                <option value="Intervención">Intervención</option>
+                <option value="Interventoría">Interventoría</option>
+                <option value="Mantenimiento / conservación vial">Mantenimiento / conservación vial</option>
+                <option value="Materiales Placa huella">Materiales Placa huella</option>
+                <option value="Mejoramiento vial">Mejoramiento vial</option>
+                <option value="Mejoramiento vial / gestión del riesgo">Mejoramiento vial / gestión del riesgo</option>
+                <option value="PAP">PAP</option>
+                <option value="Placa huella">Placa huella</option>
+                <option value="Seguridad vial / señalización">Seguridad vial / señalización</option>
+              </select>
             </div>
             <div class="form-field">
               <label for="inpProjYear">Año del Contrato / Ejecución *</label>
               <input type="number" id="inpProjYear" min="2020" max="2035" value="2025" required>
             </div>
             <div class="form-field">
-              <label for="inpProjFecha">Fecha de Formalización</label>
-              <input type="date" id="inpProjFecha">
+              <label for="inpProjFecha">Fecha de Formalización *</label>
+              <input type="date" id="inpProjFecha" required>
             </div>
             <div class="form-field">
               <label for="inpProjInversion">Inversión Total Asignada ($ COP) *</label>
@@ -381,6 +393,10 @@
             <div class="form-field">
               <label for="inpProjEstabilizacion">Estabilización Vial ($/km)</label>
               <input type="number" id="inpProjEstabilizacion" step="1" min="0" placeholder="Ej: 380000000">
+            </div>
+            <div class="form-field">
+              <label for="inpProjEstabilizacionLiq">Estabilización Vial Liquidada ($/km)</label>
+              <input type="number" id="inpProjEstabilizacionLiq" step="1" min="0" placeholder="Ej: 410000000">
             </div>
             <div class="form-field">
               <label for="inpProjPavFlex">Pavimento Flexible ($/km)</label>
@@ -457,6 +473,7 @@
                 <th class="text-right">Pav. Rígido Liq. ($/km)</th>
                 <th class="text-right">Puente ($/mL)</th>
                 <th class="text-right">Estabilización ($/km)</th>
+                <th class="text-right">Estabilización Liq. ($/km)</th>
               </tr>
             </thead>
             <tbody id="reportTableBody">
@@ -552,9 +569,9 @@
   <script src="js/antioquia_geojson.js?v=15"></script>
   <!-- Capa GeoJSON Oficial Subregiones convertida desde Shapefile Gobernación -->
   <script src="js/subregiones_oficiales_geojson.js?v=15"></script>
-  <script src="js/data.js?v=15"></script>
-  <script src="js/map.js?v=15"></script>
-  <script src="js/app.js?v=15"></script>
+  <script src="js/data.js?v=16"></script>
+  <script src="js/map.js?v=16"></script>
+  <script src="js/app.js?v=16"></script>
 
   <!-- Lógica de Pestañas de Tenores Especiales -->
   <script>
