@@ -30,14 +30,17 @@ const App = {
   // Inicializar mapa geográfico interactivo Leaflet
   initMap() {
     initAntioquiaLeafletMap("vectorMapContainer", (clickedSubregion) => {
-      if (this.activeFilters.subregion === clickedSubregion) {
+      this.selectedProject = null;
+      if (clickedSubregion === "ALL" || this.activeFilters.subregion === clickedSubregion) {
         this.activeFilters.subregion = "ALL";
       } else {
         this.activeFilters.subregion = clickedSubregion;
       }
+      this.activeFilters.municipio = "ALL";
       document.getElementById("filterSubregion").value = this.activeFilters.subregion;
       this.updateMunicipioSelector();
       this.applyFilters();
+      highlightSubregionInMap(this.activeFilters.subregion);
     });
   },
 
@@ -141,6 +144,7 @@ const App = {
 
     // Subregión
     document.getElementById("filterSubregion").addEventListener("change", (e) => {
+      this.selectedProject = null;
       this.activeFilters.subregion = e.target.value;
       this.activeFilters.municipio = "ALL";
       this.updateMunicipioSelector();
@@ -448,13 +452,30 @@ const App = {
       stats[sub] = { count: 0, total: 0, km: 0 };
     }
 
-    this.filteredProjects.forEach(p => {
+    const { search, year, tipologia } = this.activeFilters;
+
+    // Calculamos las estadísticas geográficas para TODO el mapa respetando los filtros globales (año, tipología, búsqueda)
+    // para que ninguna subregión quede en ceros artificialmente cuando el usuario selecciona o pasa el cursor
+    this.data.projects.forEach(p => {
+      if (search) {
+        const matchName = p.proyecto.toLowerCase().includes(search);
+        const matchMuni = p.municipio.toLowerCase().includes(search);
+        if (!matchName && !matchMuni) return;
+      }
+      if (year !== "ALL" && p.year !== parseInt(year)) {
+        return;
+      }
+      if (tipologia !== "ALL" && p.tipologia !== tipologia) {
+        return;
+      }
+
       const s = p.subregion;
       if (stats[s]) {
         stats[s].count++;
         if (p.valorInvertido) stats[s].total += p.valorInvertido;
         if (p.longitudKm) stats[s].km += p.longitudKm;
       }
+
       const m = p.municipio;
       if (m && m !== "GENERAL") {
         if (!muniStats[m]) muniStats[m] = { count: 0, total: 0 };
