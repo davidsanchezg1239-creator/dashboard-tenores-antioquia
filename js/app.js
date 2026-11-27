@@ -14,7 +14,8 @@ const App = {
     year: "ALL",
     tipologia: "ALL",
     subregion: "ALL",
-    municipio: "ALL"
+    municipio: "ALL",
+    componente: "ALL"
   },
   adminPassword: "Antioquia2025*",
 
@@ -47,7 +48,7 @@ const App = {
   // Carga de datos (con soporte de persistencia local si el admin actualizó)
   loadData() {
     this.data = DB_INITIAL_DATA;
-    const DB_SCHEMA_VERSION = "20261127_sif3_v2";
+    const DB_SCHEMA_VERSION = "20261127_sif3_v3_full";
     const savedVersion = localStorage.getItem("antioquia_infraestructura_version");
     const saved = localStorage.getItem("antioquia_infraestructura_data");
     
@@ -164,6 +165,16 @@ const App = {
       this.applyFilters();
     });
 
+    // Componente / Tenor Específico
+    const compFilter = document.getElementById("filterComponente");
+    if (compFilter) {
+      compFilter.addEventListener("change", (e) => {
+        this.selectedProject = null;
+        this.activeFilters.componente = e.target.value;
+        this.applyFilters();
+      });
+    }
+
     // Limpiar Filtros
     document.getElementById("btnResetFilters").addEventListener("click", () => {
       this.resetFilters();
@@ -224,7 +235,7 @@ const App = {
 
   // Aplicar filtros a los proyectos
   applyFilters() {
-    const { search, year, tipologia, subregion, municipio } = this.activeFilters;
+    const { search, year, tipologia, subregion, municipio, componente } = this.activeFilters;
 
     this.filteredProjects = this.data.projects.filter(p => {
       // Búsqueda por texto (nombre de proyecto o municipio)
@@ -251,6 +262,26 @@ const App = {
 
       // Filtro Municipio
       if (municipio !== "ALL" && p.municipio !== municipio) {
+        return false;
+      }
+
+      // Filtro Componente / Tenor Específico
+      if (componente === "PAV_RIGIDO" && !p.pavimentoRigidoKm) {
+        return false;
+      }
+      if (componente === "PAV_RIGIDO_LIQ" && !p.pavimentoRigidoLiquidadoKm) {
+        return false;
+      }
+      if (componente === "ESTABILIZACION" && !p.tenorEstabilizacionKm) {
+        return false;
+      }
+      if (componente === "PAV_FLEXIBLE" && !p.tenorPavimentoFlexibleKm) {
+        return false;
+      }
+      if (componente === "PLACA_HUELLA" && !p.tenorPlacaHuellaKm) {
+        return false;
+      }
+      if (componente === "PUENTE" && !p.tenorPuenteMl) {
         return false;
       }
 
@@ -461,8 +492,14 @@ const App = {
             <span class="subreg-tag">${p.subregion}</span>
             <span class="muni-tag">${p.municipio}</span>
             <span class="val-tag">${p.valorInvertido ? this.formatCompactCurrency(p.valorInvertido) : "N/D"}</span>
-            ${p.pavimentoRigidoKm ? `<span class="val-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Pav. Rígido</span>` : ''}
-            ${p.pavimentoRigidoLiquidadoKm ? `<span class="val-tag" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">Pav. Rígido Liq.</span>` : ''}
+          </div>
+          <div class="item-tenores-pills">
+            ${p.pavimentoRigidoKm ? `<span class="tenor-pill rigido" title="Pavimento Rígido: ${this.formatCurrency(p.pavimentoRigidoKm)}/km">Pav. Rígido: ${this.formatCurrency(p.pavimentoRigidoKm)}/km</span>` : ''}
+            ${p.pavimentoRigidoLiquidadoKm ? `<span class="tenor-pill rigido-liq" title="Pav. Rígido Liquidado: ${this.formatCurrency(p.pavimentoRigidoLiquidadoKm)}/km">Pav. Rígido Liq.: ${this.formatCurrency(p.pavimentoRigidoLiquidadoKm)}/km</span>` : ''}
+            ${p.tenorEstabilizacionKm ? `<span class="tenor-pill estab" title="Estabilización: ${this.formatCurrency(p.tenorEstabilizacionKm)}/km">Estabilización: ${this.formatCurrency(p.tenorEstabilizacionKm)}/km</span>` : ''}
+            ${p.tenorPavimentoFlexibleKm ? `<span class="tenor-pill flexible" title="Pav. Flexible: ${this.formatCurrency(p.tenorPavimentoFlexibleKm)}/km">Pav. Flexible: ${this.formatCurrency(p.tenorPavimentoFlexibleKm)}/km</span>` : ''}
+            ${p.tenorPlacaHuellaKm ? `<span class="tenor-pill placahuella" title="Placa Huella: ${this.formatCurrency(p.tenorPlacaHuellaKm)}/km">Placa Huella: ${this.formatCurrency(p.tenorPlacaHuellaKm)}/km</span>` : ''}
+            ${p.tenorPuenteMl ? `<span class="tenor-pill puente" title="Puente: ${this.formatCurrency(p.tenorPuenteMl)}/mL">Puente: ${this.formatCurrency(p.tenorPuenteMl)}/mL</span>` : ''}
           </div>
         </div>
       `;
@@ -528,9 +565,96 @@ const App = {
     highlightSubregionInMap(this.activeFilters.subregion);
   },
 
-  // Renderizado de las tablas de tenores especializados (Alcantarillas, Box Culvert, Muros)
+  // Renderizado de las tablas de tenores especializados (Pavimento Rígido, Estabilización, Alcantarillas, Box Culvert, Muros)
   renderSpecialTenores() {
-    // 1. Alcantarillas
+    // 1. Pavimento Rígido y Liquidado (de la BD oficial de proyectos)
+    const pavRigidoContainer = document.getElementById("tablePavRigidoBody");
+    if (pavRigidoContainer && this.data.projects) {
+      const rigidoProjects = this.data.projects.filter(p => p.pavimentoRigidoKm || p.pavimentoRigidoLiquidadoKm);
+      let rigidoHtml = "";
+      rigidoProjects.forEach((p) => {
+        rigidoHtml += `
+          <tr>
+            <td class="text-center">
+              <button class="btn-select-row" data-id="${p.id}" title="Seleccionar y ver ficha técnica">
+                Ver Ficha
+              </button>
+            </td>
+            <td><strong>${p.proyecto}</strong></td>
+            <td>${p.subregion}</td>
+            <td>${p.municipio}</td>
+            <td class="text-center">${p.year || "—"}</td>
+            <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
+            <td class="text-right highlight-cell"><strong>${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) + "/km" : "—"}</strong></td>
+            <td class="text-right">${p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) + "/km" : "—"}</td>
+            <td class="text-right">${p.valorInvertido ? this.formatCurrency(p.valorInvertido) : "—"}</td>
+          </tr>
+        `;
+      });
+      pavRigidoContainer.innerHTML = rigidoHtml;
+
+      pavRigidoContainer.querySelectorAll(".btn-select-row").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = parseInt(btn.dataset.id);
+          const proj = this.data.projects.find(p => p.id === id);
+          if (proj) {
+            this.selectedProject = proj;
+            this.renderInfoPanel();
+            this.renderProjectsListPreview();
+            if (proj.subregion && proj.subregion !== "GENERAL" && typeof highlightSubregionInMap === "function") {
+              highlightSubregionInMap(proj.subregion);
+            }
+            const mainPanel = document.querySelector(".info-panel-card");
+            if (mainPanel) mainPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    }
+
+    // 2. Estabilización de Vías (de la BD oficial de proyectos)
+    const estabContainer = document.getElementById("tableEstabilizacionBody");
+    if (estabContainer && this.data.projects) {
+      const estabProjects = this.data.projects.filter(p => p.tenorEstabilizacionKm);
+      let estabHtml = "";
+      estabProjects.forEach((p) => {
+        estabHtml += `
+          <tr>
+            <td class="text-center">
+              <button class="btn-select-row" data-id="${p.id}" title="Seleccionar y ver ficha técnica">
+                Ver Ficha
+              </button>
+            </td>
+            <td><strong>${p.proyecto}</strong></td>
+            <td>${p.subregion}</td>
+            <td>${p.municipio}</td>
+            <td class="text-center">${p.year || "—"}</td>
+            <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
+            <td class="text-right highlight-cell"><strong>${p.tenorEstabilizacionKm ? this.formatCurrency(p.tenorEstabilizacionKm) + "/km" : "—"}</strong></td>
+            <td class="text-right">${p.valorInvertido ? this.formatCurrency(p.valorInvertido) : "—"}</td>
+          </tr>
+        `;
+      });
+      estabContainer.innerHTML = estabHtml;
+
+      estabContainer.querySelectorAll(".btn-select-row").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = parseInt(btn.dataset.id);
+          const proj = this.data.projects.find(p => p.id === id);
+          if (proj) {
+            this.selectedProject = proj;
+            this.renderInfoPanel();
+            this.renderProjectsListPreview();
+            if (proj.subregion && proj.subregion !== "GENERAL" && typeof highlightSubregionInMap === "function") {
+              highlightSubregionInMap(proj.subregion);
+            }
+            const mainPanel = document.querySelector(".info-panel-card");
+            if (mainPanel) mainPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    }
+
+    // 3. Alcantarillas
     const alcContainer = document.getElementById("tableAlcantarillasBody");
     if (alcContainer && this.data.alcantarillas) {
       let alcHtml = "";
@@ -611,12 +735,12 @@ const App = {
           <td class="text-center">${p.year || "N/A"}</td>
           <td class="text-right">${p.valorInvertido ? this.formatCurrency(p.valorInvertido) : "—"}</td>
           <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
-          <td class="text-right">${p.tenorPlacaHuellaKm ? this.formatCompactCurrency(p.tenorPlacaHuellaKm) : "—"}</td>
-          <td class="text-right">${p.tenorPavimentoFlexibleKm ? this.formatCompactCurrency(p.tenorPavimentoFlexibleKm) : "—"}</td>
-          <td class="text-right">${p.pavimentoRigidoKm ? this.formatCompactCurrency(p.pavimentoRigidoKm) : "—"}</td>
-          <td class="text-right highlight-cell">${p.pavimentoRigidoLiquidadoKm ? this.formatCompactCurrency(p.pavimentoRigidoLiquidadoKm) : "—"}</td>
-          <td class="text-right">${p.tenorPuenteMl ? this.formatCompactCurrency(p.tenorPuenteMl) : "—"}</td>
-          <td class="text-right">${p.tenorEstabilizacionKm ? this.formatCompactCurrency(p.tenorEstabilizacionKm) : "—"}</td>
+          <td class="text-right" title="${p.tenorPlacaHuellaKm ? this.formatCurrency(p.tenorPlacaHuellaKm) : ''}">${p.tenorPlacaHuellaKm ? this.formatCompactCurrency(p.tenorPlacaHuellaKm) : "—"}</td>
+          <td class="text-right" title="${p.tenorPavimentoFlexibleKm ? this.formatCurrency(p.tenorPavimentoFlexibleKm) : ''}">${p.tenorPavimentoFlexibleKm ? this.formatCompactCurrency(p.tenorPavimentoFlexibleKm) : "—"}</td>
+          <td class="text-right highlight-cell" title="${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) : ''}"><strong>${p.pavimentoRigidoKm ? this.formatCompactCurrency(p.pavimentoRigidoKm) : "—"}</strong></td>
+          <td class="text-right highlight-cell" title="${p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) : ''}"><strong>${p.pavimentoRigidoLiquidadoKm ? this.formatCompactCurrency(p.pavimentoRigidoLiquidadoKm) : "—"}</strong></td>
+          <td class="text-right" title="${p.tenorPuenteMl ? this.formatCurrency(p.tenorPuenteMl) : ''}">${p.tenorPuenteMl ? this.formatCompactCurrency(p.tenorPuenteMl) : "—"}</td>
+          <td class="text-right highlight-cell" title="${p.tenorEstabilizacionKm ? this.formatCurrency(p.tenorEstabilizacionKm) : ''}"><strong>${p.tenorEstabilizacionKm ? this.formatCompactCurrency(p.tenorEstabilizacionKm) : "—"}</strong></td>
         </tr>
       `;
     });
@@ -834,13 +958,16 @@ const App = {
       year: "ALL",
       tipologia: "ALL",
       subregion: "ALL",
-      municipio: "ALL"
+      municipio: "ALL",
+      componente: "ALL"
     };
 
     document.getElementById("filterSearch").value = "";
     document.getElementById("filterYear").value = "ALL";
     document.getElementById("filterTipologia").value = "ALL";
     document.getElementById("filterSubregion").value = "ALL";
+    const compFilter = document.getElementById("filterComponente");
+    if (compFilter) compFilter.value = "ALL";
     this.updateMunicipioSelector();
     this.selectedProject = null;
 

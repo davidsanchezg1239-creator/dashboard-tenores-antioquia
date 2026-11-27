@@ -6,7 +6,7 @@
   <title>Dashboard de Tenores de Obra Civil | Gobernación de Antioquia</title>
   
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=13">
 
   <!-- Leaflet.js CSS para Cartografía Real GIS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -94,6 +94,20 @@
             <option value="ALL">Todos los municipios</option>
           </select>
         </div>
+
+        <!-- 6. Componente de Tenor -->
+        <div class="filter-box">
+          <label for="filterComponente">Componente / Tenor</label>
+          <select id="filterComponente">
+            <option value="ALL">Todos los componentes</option>
+            <option value="PAV_RIGIDO">Pavimento Rígido ($/km) (24)</option>
+            <option value="PAV_RIGIDO_LIQ">Pav. Rígido Liquidado ($/km) (7)</option>
+            <option value="ESTABILIZACION">Estabilización Vial ($/km) (33)</option>
+            <option value="PAV_FLEXIBLE">Pavimento Flexible ($/km) (19)</option>
+            <option value="PLACA_HUELLA">Placa Huella ($/km) (69)</option>
+            <option value="PUENTE">Tenor Puente ($/mL) (8)</option>
+          </select>
+        </div>
       </div>
     </section>
 
@@ -160,21 +174,70 @@
 
     </section>
 
-    <!-- Sección de Módulos Especializados de Tenores (Alcantarillas, Box Culvert, Muros) -->
+    <!-- Sección de Módulos Especializados de Tenores (Pavimento Rígido, Estabilización, Alcantarillas, Box Culvert, Muros) -->
     <section class="specialized-tenores-section">
       <div class="section-title-bar">
-        <h2 class="section-title">Tenores Específicos de Obras de Arte y Drenaje Vial</h2>
+        <h2 class="section-title">Tenores Especializados de Pavimentos, Vías y Obras de Drenaje</h2>
       </div>
 
       <!-- Pestañas de Navegación -->
       <div class="tenores-tabs">
-        <button class="tab-btn active" data-tab="tab-box-culvert">Box Culvert (Cajones)</button>
+        <button class="tab-btn active" data-tab="tab-pav-rigido">Pavimento Rígido y Liquidado (24)</button>
+        <button class="tab-btn" data-tab="tab-estabilizacion">Estabilización de Vías (33)</button>
+        <button class="tab-btn" data-tab="tab-box-culvert">Box Culvert (Cajones)</button>
         <button class="tab-btn" data-tab="tab-alcantarillas">Alcantarillas ($/mL)</button>
         <button class="tab-btn" data-tab="tab-muros">Muros de Contención</button>
       </div>
 
-      <!-- Tab 1: Box Culvert -->
-      <div class="tab-content active" id="tab-box-culvert">
+      <!-- Tab 1: Pavimento Rígido y Liquidado -->
+      <div class="tab-content active" id="tab-pav-rigido">
+        <div class="table-responsive">
+          <table class="engineering-table">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 100px;">Acción</th>
+                <th>Proyecto / Contrato</th>
+                <th>Subregión</th>
+                <th>Municipio</th>
+                <th class="text-center">Año</th>
+                <th class="text-center">Longitud</th>
+                <th class="text-right">Pavimento Rígido ($/km)</th>
+                <th class="text-right">Pav. Rígido Liq. ($/km)</th>
+                <th class="text-right">Inversión Asignada (COP)</th>
+              </tr>
+            </thead>
+            <tbody id="tablePavRigidoBody">
+              <!-- Se inyecta dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Estabilización de Vías -->
+      <div class="tab-content" id="tab-estabilizacion">
+        <div class="table-responsive">
+          <table class="engineering-table">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 100px;">Acción</th>
+                <th>Proyecto / Contrato</th>
+                <th>Subregión</th>
+                <th>Municipio</th>
+                <th class="text-center">Año</th>
+                <th class="text-center">Longitud</th>
+                <th class="text-right">Tenor Estabilización ($/km)</th>
+                <th class="text-right">Inversión Asignada (COP)</th>
+              </tr>
+            </thead>
+            <tbody id="tableEstabilizacionBody">
+              <!-- Se inyecta dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Box Culvert -->
+      <div class="tab-content" id="tab-box-culvert">
         <div class="table-responsive">
           <table class="engineering-table">
             <thead>
@@ -362,12 +425,12 @@
   <!-- Leaflet.js para Mapa Geográfico Real -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Capa GeoJSON Oficial DANE 125 Municipios y Subregiones -->
-  <script src="js/antioquia_geojson.js?v=12"></script>
+  <script src="js/antioquia_geojson.js?v=13"></script>
   <!-- Capa GeoJSON Oficial Subregiones convertida desde Shapefile Gobernación -->
-  <script src="js/subregiones_oficiales_geojson.js?v=12"></script>
-  <script src="js/data.js?v=12"></script>
-  <script src="js/map.js?v=12"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/subregiones_oficiales_geojson.js?v=13"></script>
+  <script src="js/data.js?v=13"></script>
+  <script src="js/map.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
 
   <!-- Lógica de Pestañas de Tenores Especiales -->
   <script>
