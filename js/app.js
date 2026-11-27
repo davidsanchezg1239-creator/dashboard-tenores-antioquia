@@ -18,11 +18,13 @@ const App = {
     componente: "ALL"
   },
   adminPassword: "Antioquia2025*",
+  projectAddPassword: "Gobernacion04",
 
   init() {
     this.loadData();
     this.initFilterSelectors();
     this.setupEventListeners();
+    this.setupNewProjectForm();
     this.initMap();
     this.applyFilters();
     this.renderSpecialTenores();
@@ -48,7 +50,7 @@ const App = {
   // Carga de datos (con soporte de persistencia local si el admin actualizó)
   loadData() {
     this.data = DB_INITIAL_DATA;
-    const DB_SCHEMA_VERSION = "20261127_sif3_v3_full";
+    const DB_SCHEMA_VERSION = "20261127_sif3_v4_addproj";
     const savedVersion = localStorage.getItem("antioquia_infraestructura_version");
     const saved = localStorage.getItem("antioquia_infraestructura_data");
     
@@ -922,7 +924,7 @@ const App = {
         if (newProjects.length > 0) {
           this.data.projects = [...this.data.projects, ...newProjects];
           localStorage.setItem("antioquia_infraestructura_data", JSON.stringify(this.data));
-          localStorage.setItem("antioquia_infraestructura_version", "20261127_sif3_v2");
+          localStorage.setItem("antioquia_infraestructura_version", "20261127_sif3_v4_addproj");
           this.initFilterSelectors();
           this.applyFilters();
           alert(`¡Éxito! Se cargaron ${newProjects.length} nuevos proyectos a la base de datos.`);
@@ -1022,6 +1024,223 @@ const App = {
     const str = String(val).replace(/\$/g, "").replace(/\s/g, "").replace(/,/g, ".");
     const num = parseFloat(str);
     return isNaN(num) ? null : num;
+  },
+
+  // ==========================================================================
+  // Módulo de Ingreso de Nuevos Proyectos (Filtro con contraseña Gobernacion04)
+  // ==========================================================================
+  setupNewProjectForm() {
+    const btnUnlock = document.getElementById("btnUnlockProjectForm");
+    const inputPass = document.getElementById("inputProjectPass");
+    const authError = document.getElementById("projectAuthError");
+    const authGate = document.getElementById("projectAuthGate");
+    const formCard = document.getElementById("newProjectFormCard");
+    const btnLock = document.getElementById("btnLockProjectForm");
+    const subSelect = document.getElementById("inpProjSubregion");
+    const inpInversion = document.getElementById("inpProjInversion");
+    const hintInversion = document.getElementById("hintInversionCop");
+    const formSubmit = document.getElementById("formAddNewProject");
+
+    if (btnUnlock && inputPass) {
+      const handleAuth = () => {
+        const val = inputPass.value.trim();
+        if (val === this.projectAddPassword || val.toLowerCase() === this.projectAddPassword.toLowerCase()) {
+          authError.style.display = "none";
+          authGate.style.display = "none";
+          formCard.style.display = "block";
+          this.updateFormMunicipios();
+          formCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          authError.style.display = "block";
+        }
+      };
+
+      btnUnlock.addEventListener("click", handleAuth);
+      inputPass.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAuth();
+        }
+      });
+    }
+
+    if (btnLock) {
+      btnLock.addEventListener("click", () => {
+        formCard.style.display = "none";
+        authGate.style.display = "flex";
+        inputPass.value = "";
+        authError.style.display = "none";
+      });
+    }
+
+    if (subSelect) {
+      subSelect.addEventListener("change", () => {
+        this.updateFormMunicipios();
+      });
+    }
+
+    if (inpInversion && hintInversion) {
+      inpInversion.addEventListener("input", (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          hintInversion.textContent = "= " + this.formatCurrency(val);
+        } else {
+          hintInversion.textContent = "";
+        }
+      });
+    }
+
+    if (formSubmit) {
+      formSubmit.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.handleCreateNewProject();
+      });
+    }
+  },
+
+  updateFormMunicipios() {
+    const subSelect = document.getElementById("inpProjSubregion");
+    const muniSelect = document.getElementById("inpProjMunicipio");
+    if (!subSelect || !muniSelect) return;
+
+    const chosenSub = subSelect.value;
+    let munis = [];
+
+    if (typeof ANTIOQUIA_GEOJSON !== "undefined" && ANTIOQUIA_GEOJSON.features) {
+      ANTIOQUIA_GEOJSON.features.forEach(feat => {
+        const p = feat.properties;
+        if (!chosenSub || chosenSub === "GENERAL" || p.subregion === chosenSub) {
+          munis.push(p.municipio);
+        }
+      });
+    }
+
+    munis = Array.from(new Set(munis)).sort((a, b) => a.localeCompare(b));
+    let optionsHtml = '<option value="">Seleccione el municipio...</option>';
+    if (chosenSub === "GENERAL") {
+      optionsHtml += '<option value="GENERAL">GENERAL / DEPARTAMENTAL</option>';
+    }
+    munis.forEach(m => {
+      optionsHtml += `<option value="${m}">${m}</option>`;
+    });
+    if (chosenSub !== "GENERAL") {
+      optionsHtml += '<option value="GENERAL">OTRO / VARIOS MUNICIPIOS</option>';
+    }
+    muniSelect.innerHTML = optionsHtml;
+  },
+
+  handleCreateNewProject() {
+    const nombre = document.getElementById("inpProjNombre").value.trim();
+    const subregion = document.getElementById("inpProjSubregion").value.trim();
+    const municipio = document.getElementById("inpProjMunicipio").value.trim();
+    const tipologia = document.getElementById("inpProjTipologia").value.trim();
+    const year = parseInt(document.getElementById("inpProjYear").value) || new Date().getFullYear();
+    const fecha = document.getElementById("inpProjFecha").value.trim() || `${year}-01-01`;
+    const inversion = this.cleanNumber(document.getElementById("inpProjInversion").value);
+
+    if (!nombre) {
+      alert("Por favor ingrese el nombre del proyecto.");
+      return;
+    }
+    if (!subregion) {
+      alert("Por favor seleccione la subregión.");
+      return;
+    }
+    if (!municipio) {
+      alert("Por favor seleccione el municipio.");
+      return;
+    }
+    if (!tipologia) {
+      alert("Por favor ingrese la tipología de obra.");
+      return;
+    }
+    if (!inversion || inversion <= 0) {
+      alert("Por favor ingrese una inversión válida.");
+      return;
+    }
+
+    const longitud = this.cleanNumber(document.getElementById("inpProjLongitud").value);
+    const pavRigido = this.cleanNumber(document.getElementById("inpProjPavRigido").value);
+    const pavRigidoLiq = this.cleanNumber(document.getElementById("inpProjPavRigidoLiq").value);
+    const estabilizacion = this.cleanNumber(document.getElementById("inpProjEstabilizacion").value);
+    const pavFlex = this.cleanNumber(document.getElementById("inpProjPavFlex").value);
+    const placaHuella = this.cleanNumber(document.getElementById("inpProjPlacaHuella").value);
+    const puente = this.cleanNumber(document.getElementById("inpProjPuente").value);
+
+    const newId = this.data.projects.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+
+    const newProject = {
+      id: newId,
+      proyecto: nombre,
+      fecha: fecha,
+      year: year,
+      valorInvertido: inversion,
+      tipologia: tipologia,
+      subregion: subregion,
+      municipio: municipio,
+      longitudKm: longitud,
+      tenorPuenteMl: puente,
+      tenorPavimentoFlexibleKm: pavFlex,
+      tenorPlacaHuellaKm: placaHuella,
+      pavimentoRigidoKm: pavRigido,
+      tenorEstabilizacionKm: estabilizacion,
+      pavimentoRigidoLiquidadoKm: pavRigidoLiq,
+      valorPagado: null,
+      tenorContractual: null
+    };
+
+    // Agregar al inicio del array para que aparezca primero en el dashboard
+    this.data.projects.unshift(newProject);
+
+    // Guardar en localStorage para persistencia local de la sesión
+    localStorage.setItem("antioquia_infraestructura_data", JSON.stringify(this.data));
+    localStorage.setItem("antioquia_infraestructura_version", "20261127_sif3_v4_addproj");
+
+    // Actualizar selectores y vistas
+    this.initFilterSelectors();
+    this.activeFilters = {
+      search: "",
+      year: "ALL",
+      tipologia: "ALL",
+      subregion: "ALL",
+      municipio: "ALL",
+      componente: "ALL"
+    };
+    document.getElementById("filterSearch").value = "";
+    document.getElementById("filterYear").value = "ALL";
+    document.getElementById("filterTipologia").value = "ALL";
+    document.getElementById("filterSubregion").value = "ALL";
+    const compFilter = document.getElementById("filterComponente");
+    if (compFilter) compFilter.value = "ALL";
+
+    // Seleccionar de inmediato el nuevo proyecto creado
+    this.selectedProject = newProject;
+    this.applyFilters();
+    this.renderSpecialTenores();
+
+    if (newProject.subregion && newProject.subregion !== "GENERAL" && typeof highlightSubregionInMap === "function") {
+      highlightSubregionInMap(newProject.subregion);
+    }
+
+    // Mostrar banner de éxito
+    const successBanner = document.getElementById("projectSuccessBanner");
+    if (successBanner) {
+      successBanner.style.display = "flex";
+      setTimeout(() => {
+        successBanner.style.display = "none";
+      }, 8000);
+    }
+
+    // Scroll suave hacia la ficha del proyecto en el panel principal
+    const mainPanel = document.querySelector(".info-panel-card");
+    if (mainPanel) {
+      mainPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // Limpiar formulario para nuevo registro
+    document.getElementById("formAddNewProject").reset();
+    const hintInversion = document.getElementById("hintInversionCop");
+    if (hintInversion) hintInversion.textContent = "";
   }
 };
 
