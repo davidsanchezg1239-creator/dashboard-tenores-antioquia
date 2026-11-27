@@ -6,7 +6,7 @@
   <title>Dashboard de Tenores de Obra Civil | Gobernación de Antioquia</title>
   
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
 
   <!-- Leaflet.js CSS para Cartografía Real GIS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -243,10 +243,19 @@
         <button class="modal-close-btn">&times;</button>
       </div>
       <div class="modal-body">
+        <div class="modal-instruction-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Haga clic en cualquier fila o en <strong>"Ver Ficha"</strong> para seleccionar el proyecto y consultar su ficha técnica y tenores en el panel principal.</span>
+        </div>
         <div class="table-responsive">
           <table class="engineering-table">
             <thead>
               <tr>
+                <th class="text-center" style="width: 105px;">Acción</th>
                 <th>#</th>
                 <th>Proyecto</th>
                 <th>Subregión</th>
@@ -351,12 +360,12 @@
   <!-- Leaflet.js para Mapa Geográfico Real -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Capa GeoJSON Oficial DANE 125 Municipios y Subregiones -->
-  <script src="js/antioquia_geojson.js?v=8"></script>
+  <script src="js/antioquia_geojson.js?v=9"></script>
   <!-- Capa GeoJSON Oficial Subregiones convertida desde Shapefile Gobernación -->
-  <script src="js/subregiones_oficiales_geojson.js?v=8"></script>
-  <script src="js/data.js?v=8"></script>
-  <script src="js/map.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
+  <script src="js/subregiones_oficiales_geojson.js?v=9"></script>
+  <script src="js/data.js?v=9"></script>
+  <script src="js/map.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 
   <!-- Lógica de Pestañas de Tenores Especiales -->
   <script>

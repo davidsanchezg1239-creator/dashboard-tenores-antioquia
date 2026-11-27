@@ -1127,14 +1127,56 @@ path.leaflet-interactive {
   background-color: #f8fafc;
 }
 
+#fullReportModal .engineering-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
 #fullReportModal .engineering-table tbody tr:hover {
-  background-color: #ecfdf5;
+  background-color: #dcfce7 !important;
 }
 
 #fullReportModal .engineering-table td {
   border-bottom: 1px solid #e2e8f0;
   border-right: 1px solid #f1f5f9;
   padding: 0.75rem 1rem;
+}
+
+.modal-instruction-banner {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-select-row {
+  background: linear-gradient(135deg, #00843d 0%, #005a2b 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+}
+
+.btn-select-row:hover {
+  background: linear-gradient(135deg, #009944 0%, #007036 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Barras de desplazamiento estilizadas y siempre visibles */

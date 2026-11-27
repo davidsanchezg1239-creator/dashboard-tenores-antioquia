@@ -533,7 +533,15 @@ const App = {
     let html = "";
     this.filteredProjects.forEach((p, idx) => {
       html += `
-        <tr>
+        <tr class="report-table-row" data-id="${p.id}" title="Haga clic para ver la ficha técnica de este proyecto en el panel principal">
+          <td class="text-center">
+            <button class="btn-select-row" data-id="${p.id}" title="Seleccionar y ver ficha técnica">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              Ver Ficha
+            </button>
+          </td>
           <td>${idx + 1}</td>
           <td><strong>${p.proyecto}</strong></td>
           <td>${p.subregion}</td>
@@ -552,6 +560,28 @@ const App = {
 
     tableBody.innerHTML = html;
     modal.style.display = "flex";
+
+    // Asignar evento de selección a toda la fila y al botón "Ver Ficha"
+    tableBody.querySelectorAll(".report-table-row").forEach(row => {
+      row.addEventListener("click", () => {
+        const id = parseInt(row.dataset.id);
+        const proj = this.data.projects.find(p => p.id === id);
+        if (proj) {
+          this.selectedProject = proj;
+          this.renderInfoPanel();
+          this.renderProjectsListPreview();
+          if (proj.subregion && proj.subregion !== "GENERAL" && typeof highlightSubregionInMap === "function") {
+            highlightSubregionInMap(proj.subregion);
+          }
+          modal.style.display = "none";
+          // Scroll suave hacia el panel de información general del proyecto
+          const mainPanel = document.querySelector(".info-panel-card");
+          if (mainPanel) {
+            mainPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    });
 
     // Exportar tabla a CSV
     document.getElementById("btnExportReportCsv").onclick = () => {
