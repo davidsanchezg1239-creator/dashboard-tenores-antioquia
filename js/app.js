@@ -47,28 +47,41 @@ const App = {
     });
   },
 
-  // Carga de datos (con soporte de persistencia local si el admin actualizó)
+  // Carga de datos (con soporte de persistencia local de proyectos nuevos)
   loadData() {
-    this.data = DB_INITIAL_DATA;
-    const DB_SCHEMA_VERSION = "20261127_sif3_v4_addproj";
+    this.data = JSON.parse(JSON.stringify(DB_INITIAL_DATA));
+    const DB_SCHEMA_VERSION = "20261127_sif3_v5_establiq";
+
+    // 1. Cargar proyectos creados por el usuario desde su almacenamiento dedicado
+    try {
+      const customProjects = JSON.parse(localStorage.getItem("antioquia_infraestructura_custom_projects") || "[]");
+      if (Array.isArray(customProjects) && customProjects.length > 0) {
+        const existingIds = new Set(this.data.projects.map(p => p.id));
+        customProjects.forEach(cp => {
+          if (!existingIds.has(cp.id)) {
+            this.data.projects.unshift(cp);
+            existingIds.add(cp.id);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("No se pudieron cargar proyectos personalizados:", e);
+    }
+
+    // 2. Compatibilidad con estado guardado completo
     const savedVersion = localStorage.getItem("antioquia_infraestructura_version");
     const saved = localStorage.getItem("antioquia_infraestructura_data");
-    
     if (saved && savedVersion === DB_SCHEMA_VERSION) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.projects && parsed.projects.length >= DB_INITIAL_DATA.projects.length) {
+        if (parsed.projects && parsed.projects.length > this.data.projects.length) {
           this.data = parsed;
-        } else {
-          localStorage.removeItem("antioquia_infraestructura_data");
         }
       } catch (e) {
-        this.data = DB_INITIAL_DATA;
+        // Mantener this.data
       }
-    } else {
-      localStorage.removeItem("antioquia_infraestructura_data");
-      localStorage.setItem("antioquia_infraestructura_version", DB_SCHEMA_VERSION);
     }
+    localStorage.setItem("antioquia_infraestructura_version", DB_SCHEMA_VERSION);
   },
 
   // Inicializar desplegables de filtros con opciones únicas de la BD
@@ -202,37 +215,21 @@ const App = {
       }
     });
 
-    // Botón Admin
-    document.getElementById("btnAdminLogin").addEventListener("click", () => {
-      this.openAdminModal();
-    });
-
-    // Autenticar Admin
-    document.getElementById("btnSubmitAdminAuth").addEventListener("click", () => {
-      this.handleAdminAuth();
-    });
-
-    // Carga de Excel en Admin
-    document.getElementById("excelFileInput").addEventListener("change", (e) => {
-      this.handleExcelUpload(e);
-    });
-
-    // Exportar data.json desde Admin
-    document.getElementById("btnExportDataJson").addEventListener("click", () => {
-      this.exportDataJson();
-    });
-
-    // Resetear a datos originales
-    document.getElementById("btnResetDbDefaults").addEventListener("click", () => {
-      if (confirm("¿Deseas restaurar la base de datos original? Se perderán las cargas locales no exportadas.")) {
-        localStorage.removeItem("antioquia_infraestructura_data");
-        this.loadData();
-        this.initFilterSelectors();
-        this.applyFilters();
-        this.renderSpecialTenores();
-        alert("Base de datos restaurada con éxito.");
-      }
-    });
+    // Resetear a datos originales (si existe botón en interfaz)
+    const btnResetDbDefaults = document.getElementById("btnResetDbDefaults");
+    if (btnResetDbDefaults) {
+      btnResetDbDefaults.addEventListener("click", () => {
+        if (confirm("¿Deseas restaurar la base de datos original? Se perderán las cargas locales no exportadas.")) {
+          localStorage.removeItem("antioquia_infraestructura_data");
+          localStorage.removeItem("antioquia_infraestructura_custom_projects");
+          this.loadData();
+          this.initFilterSelectors();
+          this.applyFilters();
+          this.renderSpecialTenores();
+          alert("Base de datos restaurada con éxito.");
+        }
+      });
+    }
   },
 
   // Aplicar filtros a los proyectos
@@ -1134,6 +1131,17 @@ const App = {
 
     // Agregar al inicio del array para que aparezca primero en el dashboard
     this.data.projects.unshift(newProject);
+
+    // Guardar en la lista dedicada de proyectos creados por el usuario
+    try {
+      let customProjects = JSON.parse(localStorage.getItem("antioquia_infraestructura_custom_projects") || "[]");
+      if (!Array.isArray(customProjects)) customProjects = [];
+      customProjects = customProjects.filter(cp => cp.id !== newProject.id);
+      customProjects.unshift(newProject);
+      localStorage.setItem("antioquia_infraestructura_custom_projects", JSON.stringify(customProjects));
+    } catch (e) {
+      console.warn("Error guardando proyecto en custom projects:", e);
+    }
 
     // Guardar en localStorage para persistencia local de la sesión
     localStorage.setItem("antioquia_infraestructura_data", JSON.stringify(this.data));
