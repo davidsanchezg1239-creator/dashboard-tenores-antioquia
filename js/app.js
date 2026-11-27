@@ -43,16 +43,19 @@ const App = {
 
   // Carga de datos (con soporte de persistencia local si el admin actualizó)
   loadData() {
+    this.data = DB_INITIAL_DATA;
     const saved = localStorage.getItem("antioquia_infraestructura_data");
     if (saved) {
       try {
-        this.data = JSON.parse(saved);
-        console.log("Datos cargados desde almacenamiento local actualizado.");
+        const parsed = JSON.parse(saved);
+        if (parsed.projects && parsed.projects.length >= DB_INITIAL_DATA.projects.length) {
+          this.data = parsed;
+        } else {
+          localStorage.removeItem("antioquia_infraestructura_data");
+        }
       } catch (e) {
         this.data = DB_INITIAL_DATA;
       }
-    } else {
-      this.data = DB_INITIAL_DATA;
     }
   },
 
@@ -309,8 +312,13 @@ const App = {
           </div>
           <div class="tenor-card">
             <div class="tenor-name">Pavimento Rígido</div>
-            <div class="tenor-val">${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) + "/km" : "—"}</div>
+            <div class="tenor-val">${p.pavimentoRigidoKm ? this.formatCurrency(p.pavimentoRigidoKm) + "/km" : (p.pavimentoRigidoLiquidadoKm ? this.formatCurrency(p.pavimentoRigidoLiquidadoKm) + "/km (Liq.)" : "—")}</div>
           </div>
+          ${p.pavimentoRigidoLiquidadoKm ? `
+          <div class="tenor-card">
+            <div class="tenor-name">Pav. Rígido Liquidado</div>
+            <div class="tenor-val">${this.formatCurrency(p.pavimentoRigidoLiquidadoKm)}/km</div>
+          </div>` : ''}
           <div class="tenor-card">
             <div class="tenor-name">Tenor Puente</div>
             <div class="tenor-val">${p.tenorPuenteMl ? this.formatCurrency(p.tenorPuenteMl) + "/mL" : "—"}</div>
@@ -536,6 +544,7 @@ const App = {
           <td class="text-center">${p.longitudKm !== null ? p.longitudKm + " km" : "—"}</td>
           <td class="text-right">${p.tenorPlacaHuellaKm ? this.formatCompactCurrency(p.tenorPlacaHuellaKm) : "—"}</td>
           <td class="text-right">${p.tenorPavimentoFlexibleKm ? this.formatCompactCurrency(p.tenorPavimentoFlexibleKm) : "—"}</td>
+          <td class="text-right">${p.pavimentoRigidoKm ? this.formatCompactCurrency(p.pavimentoRigidoKm) : (p.pavimentoRigidoLiquidadoKm ? this.formatCompactCurrency(p.pavimentoRigidoLiquidadoKm) + " (Liq.)" : "—")}</td>
           <td class="text-right">${p.tenorPuenteMl ? this.formatCompactCurrency(p.tenorPuenteMl) : "—"}</td>
         </tr>
       `;
@@ -552,7 +561,7 @@ const App = {
 
   // Exportar proyectos filtrados a CSV
   exportFilteredToCsv() {
-    const headers = ["ID", "PROYECTO", "SUBREGION", "MUNICIPIO", "TIPOLOGIA", "AÑO", "VALOR INVERTIDO (COP)", "LONGITUD (KM)", "TENOR PLACA HUELLA ($/KM)", "TENOR PAVIMENTO ($/KM)", "TENOR PUENTE ($/ML)"];
+    const headers = ["ID", "PROYECTO", "SUBREGION", "MUNICIPIO", "TIPOLOGIA", "AÑO", "VALOR INVERTIDO (COP)", "LONGITUD (KM)", "TENOR PLACA HUELLA ($/KM)", "TENOR PAVIMENTO FLEXIBLE ($/KM)", "PAVIMENTO RIGIDO ($/KM)", "TENOR PUENTE ($/ML)"];
     const rows = this.filteredProjects.map((p, idx) => [
       idx + 1,
       `"${p.proyecto.replace(/"/g, '""')}"`,
@@ -564,6 +573,7 @@ const App = {
       p.longitudKm || "",
       p.tenorPlacaHuellaKm || "",
       p.tenorPavimentoFlexibleKm || "",
+      p.pavimentoRigidoKm || p.pavimentoRigidoLiquidadoKm || "",
       p.tenorPuenteMl || ""
     ]);
 

@@ -6,7 +6,7 @@
   <title>Dashboard de Tenores de Obra Civil | Gobernación de Antioquia</title>
   
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=8">
 
   <!-- Leaflet.js CSS para Cartografía Real GIS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -21,11 +21,7 @@
     <div class="header-container">
       <div class="brand-wrapper">
         <div class="brand-emblem" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
-            <path d="M12 9v6"/>
-            <path d="M9 12h6"/>
-          </svg>
+          <img src="assets/logo_gobernacion.jpg" alt="Escudo Gobernación de Antioquia" class="brand-logo-img">
         </div>
         <div>
           <h1 class="brand-title">GOBERNACIÓN DE ANTIOQUIA</h1>
@@ -261,6 +257,7 @@
                 <th class="text-center">Longitud</th>
                 <th class="text-right">Placa Huella ($/km)</th>
                 <th class="text-right">Pav. Flexible ($/km)</th>
+                <th class="text-right">Pav. Rígido ($/km)</th>
                 <th class="text-right">Puente ($/mL)</th>
               </tr>
             </thead>
@@ -354,12 +351,12 @@
   <!-- Leaflet.js para Mapa Geográfico Real -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Capa GeoJSON Oficial DANE 125 Municipios y Subregiones -->
-  <script src="js/antioquia_geojson.js?v=7"></script>
+  <script src="js/antioquia_geojson.js?v=8"></script>
   <!-- Capa GeoJSON Oficial Subregiones convertida desde Shapefile Gobernación -->
-  <script src="js/subregiones_oficiales_geojson.js?v=7"></script>
-  <script src="js/data.js?v=7"></script>
-  <script src="js/map.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/subregiones_oficiales_geojson.js?v=8"></script>
+  <script src="js/data.js?v=8"></script>
+  <script src="js/map.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 
   <!-- Lógica de Pestañas de Tenores Especiales -->
   <script>
